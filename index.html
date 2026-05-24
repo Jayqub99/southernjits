@@ -1624,8 +1624,13 @@ async function loadRiotIdsFromSupabase(){
       try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(_riotIds)); }catch(e){}
       renderRiotIdSection();
     }
+    if(data && data.riotApiKey){
+      try{ localStorage.setItem('sjs_riot_key', data.riotApiKey); }catch(e){}
+      const input = document.getElementById('soloq-api-key');
+      if(input) input.value = data.riotApiKey;
+    }
   } catch(err) {
-    console.warn('Could not load Riot IDs from Supabase:', err);
+    console.warn('Could not load config from Supabase:', err);
   }
 }
 
@@ -1698,7 +1703,14 @@ function saveApiKey(){
   key = key.replace(/[^a-zA-Z0-9-]/g, '');
   try{localStorage.setItem('sjs_riot_key', key);}catch(e){}
   document.getElementById('soloq-api-key').value = key;
-  toast('✓ API key cleaned and saved!');
+  // Persist to Supabase alongside Riot IDs
+  const ids = getRiotIds();
+  fetch('/api/saveConfig', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ riotIds: ids, riotApiKey: key })
+  }).catch(e => console.warn('saveConfig failed:', e));
+  toast('✓ API key saved!');
   refreshSoloQ();
 }
 
