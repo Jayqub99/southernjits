@@ -1605,13 +1605,41 @@ const SOLOQ_PLAYERS_DEFAULT = [
   {name:"Paul"},
 ];
 
+// ── RIOT IDs (stored in Supabase config row, cached in localStorage) ─────
+let _riotIds = null;
+
 function getRiotIds(){
-  try { return JSON.parse(localStorage.getItem('sjs_riot_ids') || '{}'); } catch(e){ return {}; }
+  if(_riotIds) return _riotIds;
+  try { _riotIds = JSON.parse(localStorage.getItem('sjs_riot_ids') || '{}'); } catch(e){ _riotIds = {}; }
+  return _riotIds;
 }
+
+async function loadRiotIdsFromSupabase(){
+  try {
+    const res = await fetch('/api/getConfig');
+    if(!res.ok) throw new Error('getConfig failed');
+    const data = await res.json();
+    if(data && data.riotIds && Object.keys(data.riotIds).length > 0){
+      _riotIds = data.riotIds;
+      try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(_riotIds)); }catch(e){}
+      renderRiotIdSection();
+    }
+  } catch(err) {
+    console.warn('Could not load Riot IDs from Supabase:', err);
+  }
+}
+
 function saveRiotId(name, summoner, tag){
   const ids = getRiotIds();
   ids[name] = {summoner, tag};
-  localStorage.setItem('sjs_riot_ids', JSON.stringify(ids));
+  _riotIds = ids;
+  try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(ids)); }catch(e){}
+  // Persist to Supabase
+  fetch('/api/saveConfig', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ riotIds: ids })
+  }).catch(e => console.warn('saveConfig failed:', e));
 }
 function getSoloqPlayers(){
   const ids = getRiotIds();
@@ -1932,6 +1960,7 @@ function closeNotifs(){
 
 renderAll();
 loadFromSupabase();
+loadRiotIdsFromSupabase();
 
 // Close search when clicking outside the search area
 document.addEventListener('click', function(e){
