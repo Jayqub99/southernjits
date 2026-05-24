@@ -175,6 +175,10 @@ tbody td{padding:12px 14px;color:var(--text)}
 .role-filter-btn:hover .role-icon-svg path{fill:var(--text)}
 .role-filter-btn.active .role-icon-svg path{fill:var(--accent)}
 .player-role-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(233,69,96,.1);color:var(--accent);border:1px solid rgba(233,69,96,.2);border-radius:4px;padding:2px 8px}
+.player-select-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.player-select-btn{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;padding:7px 16px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.player-select-btn:hover{border-color:rgba(74,144,217,.4);color:var(--text)}
+.player-select-btn.active{background:rgba(74,144,217,.12);border-color:var(--blue);color:var(--blue)}
 .no-players-msg{text-align:center;padding:60px 20px;color:var(--text3);font-size:15px}
 
 /* PLAYER CARDS */
@@ -438,6 +442,17 @@ tbody td{padding:12px 14px;color:var(--text)}
   <!-- PLAYERS -->
   <div id="page-players" class="page">
     <div class="section-header"><span class="section-title">Player Stats</span><div class="section-line"></div></div>
+    <div class="player-select-bar" id="player-select-bar">
+      <button class="player-select-btn active" onclick="setPlayerFilter('all',this)">All Players</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Aaron',this)">Aaron</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Elisha',this)">Elisha</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Vondo',this)">Vondo</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Jayqub',this)">Jayqub</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Connor',this)">Connor</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Paul',this)">Paul</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Nico',this)">Nico</button>
+      <button class="player-select-btn" onclick="setPlayerFilter('Chase',this)">Chase</button>
+    </div>
     <div class="role-filter-bar" id="role-filter-bar">
       <button class="role-filter-btn active" onclick="setRoleFilter('all',this)">
         <svg class="role-icon-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
@@ -1126,7 +1141,16 @@ function renderAnalysis(){
 
 // ── PLAYERS ───────────────────────────────────────────────────────────────
 let activeRoleFilter = 'all';
+let activePlayerSelect = 'all';
 const champFilters = {}; // keyed by player name → champion string or null
+
+function setPlayerFilter(name, btn) {
+  activePlayerSelect = name;
+  Object.keys(champFilters).forEach(k => delete champFilters[k]);
+  document.querySelectorAll('#player-select-bar .player-select-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlayers();
+}
 
 function setRoleFilter(role, btn) {
   activeRoleFilter = role;
@@ -1154,13 +1178,15 @@ function renderPlayers(){
     return bg-ag;
   });
 
-  // Filter players by role if needed
-  const filteredPlayers = activeRoleFilter === 'all'
+  // Filter by selected player first
+  const playerFiltered = activePlayerSelect === 'all'
     ? sortedPlayers
-    : sortedPlayers.filter(p => {
-        // Check if player has any scrims in the selected role
-        return scrims.some(s => s.players && s.players[activeRoleFilter] === p.name);
-      });
+    : sortedPlayers.filter(p => p.name === activePlayerSelect);
+
+  // Then filter by role (only hide cards when showing all players; when one player is selected always show their card)
+  const filteredPlayers = activeRoleFilter === 'all' || activePlayerSelect !== 'all'
+    ? playerFiltered
+    : playerFiltered.filter(p => scrims.some(s => s.players && s.players[activeRoleFilter] === p.name));
 
   if (filteredPlayers.length === 0) {
     const roleNames = {top:'Top',jng:'Jungle',mid:'Mid',adc:'ADC',sup:'Support'};
