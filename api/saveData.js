@@ -9,15 +9,16 @@ module.exports = async function handler(req, res) {
   try {
     const data = req.body;
 
-    const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/scrims?id=eq.1`, {
-      method: 'PATCH',
+    // Use upsert so the row is created automatically if it doesn't exist yet
+    const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/scrims`, {
+      method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ id: 1, data, updated_at: new Date().toISOString() })
     });
 
     if (!supaRes.ok) {
