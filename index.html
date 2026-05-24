@@ -501,16 +501,8 @@ tbody td{padding:12px 14px;color:var(--text)}
       <button onclick="refreshSoloQ()" id="soloq-refresh-btn" style="background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.3);color:var(--accent);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0">↻ Refresh All</button>
     </div>
 
-    <!-- API Key input -->
-    <div id="soloq-api-section" class="card" style="margin-bottom:20px">
-      <div class="card-title">Riot API Key</div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <input type="password" id="soloq-api-key" class="form-input" style="flex:1;max-width:500px" placeholder="Paste your Riot API key here (RGAPI-xxxxxxxx-xxxx-...)">
-        <button onclick="saveApiKey()" class="btn btn-primary" style="flex-shrink:0">Save Key</button>
-        <span style="font-size:12px;color:var(--text3)">Stored locally, never shared</span>
-      </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:8px">Get a free key at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> — renews every 24hrs</div>
-    </div>
+    <!-- API key loaded automatically from Supabase -->
+    <input type="hidden" id="soloq-api-key">
 
     <div id="soloq-status" style="display:none;padding:16px;color:var(--text2);font-size:14px;text-align:center"></div>
     <div class="player-grid" id="soloq-grid"></div>
