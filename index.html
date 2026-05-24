@@ -1840,9 +1840,15 @@ function renderAll(){
 }
 
 // ── NOTIFICATIONS ────────────────────────────────────────────────────────
+const ISSUES_CUTOFF = new Date('2026-05-04'); // games before this date are ignored
+
 function getIssues(){
   const issues = [];
   scrims.forEach((s, idx) => {
+    // Skip legacy games before the cutoff date
+    const gameDate = new Date(s.date);
+    if(!isNaN(gameDate) && gameDate < ISSUES_CUTOFF) return;
+
     const missing = [];
 
     // Missing date
