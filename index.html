@@ -398,10 +398,11 @@ tbody td{padding:12px 14px;color:var(--text)}
     <!-- CHAMPION POOL -->
     <div class="section-header"><span class="section-title">Champion Pool</span><div class="section-line"></div></div>
     <div class="card" style="margin-bottom:24px">
-      <div id="champ-pool-tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
+      <div id="champ-pool-tabs" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"></div>
+      <div id="champ-player-filters" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center"></div>
       <div class="table-wrap">
         <table id="champ-pool-table">
-          <thead><tr><th>Champion</th><th>Style</th><th>Games</th><th>W</th><th>L</th><th>WR%</th><th>Players</th></tr></thead>
+          <thead><tr><th>Champion</th><th>Style</th><th>Games</th><th>W</th><th>L</th><th>WR%</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -917,41 +918,56 @@ function trendCard(label, value, sub, color){
 
 // ── CHAMPION POOL TAB STATE ───────────────────────────────────────────────
 let champRoleTab = 'all';
+let champPlayerFilter = new Set();
+
+function _roleBtnStyle(active){
+  return `background:${active?'rgba(233,69,96,.15)':'rgba(255,255,255,.06)'};border:1px solid ${active?'rgba(233,69,96,.4)':'var(--border)'};border-radius:6px;padding:5px 14px;font-family:var(--font-u);font-size:13px;font-weight:700;letter-spacing:.05em;color:${active?'var(--accent)':'var(--text2)'};cursor:pointer;transition:all .15s`;
+}
+function _playerBtnStyle(active){
+  return `background:${active?'rgba(74,144,217,.18)':'rgba(255,255,255,.04)'};border:1px solid ${active?'rgba(74,144,217,.45)':'var(--border)'};border-radius:6px;padding:4px 12px;font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.05em;color:${active?'var(--blue)':'var(--text3)'};cursor:pointer;transition:all .15s`;
+}
 
 function setChampRoleTab(role, btn){
   champRoleTab = role;
-  document.querySelectorAll('#champ-pool-tabs button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('#champ-pool-tabs button').forEach(b=>{
+    b.setAttribute('style', _roleBtnStyle(b===btn));
+  });
+  renderChampPool();
+}
+
+function togglePlayerFilter(name, btn){
+  if(champPlayerFilter.has(name)){
+    if(champPlayerFilter.size===1) return; // keep at least one selected
+    champPlayerFilter.delete(name);
+  } else {
+    champPlayerFilter.add(name);
+  }
+  btn.setAttribute('style', _playerBtnStyle(champPlayerFilter.has(name)));
   renderChampPool();
 }
 
 function renderChampPool(){
   const roleLabel={top:'Top',jng:'Jng',mid:'Mid',adc:'ADC',sup:'Sup'};
   const cs={};
+  const allPlayersSelected = champPlayerFilter.size === PLAYER_NAMES.length;
 
   if(champRoleTab==='all'){
     scrims.forEach(s=>ROLES.forEach(r=>{
       const c=s[r]; if(!c) return;
       const player=s.players&&s.players[r]?s.players[r]:'';
-      if(!cs[c]) cs[c]={g:0,w:0,roles:{},players:{}};
+      if(!allPlayersSelected && (!player || !champPlayerFilter.has(player))) return;
+      if(!cs[c]) cs[c]={g:0,w:0,roles:{}};
       cs[c].g++; if(s.result==='Win') cs[c].w++;
       cs[c].roles[r]=(cs[c].roles[r]||0)+1;
-      if(player){
-        if(!cs[c].players[player]) cs[c].players[player]={g:0,w:0};
-        cs[c].players[player].g++; if(s.result==='Win') cs[c].players[player].w++;
-      }
     }));
   } else {
     scrims.forEach(s=>{
       const c=s[champRoleTab]; if(!c) return;
       const player=s.players&&s.players[champRoleTab]?s.players[champRoleTab]:'';
-      if(!cs[c]) cs[c]={g:0,w:0,roles:{},players:{}};
+      if(!allPlayersSelected && (!player || !champPlayerFilter.has(player))) return;
+      if(!cs[c]) cs[c]={g:0,w:0,roles:{}};
       cs[c].g++; if(s.result==='Win') cs[c].w++;
       cs[c].roles[champRoleTab]=(cs[c].roles[champRoleTab]||0)+1;
-      if(player){
-        if(!cs[c].players[player]) cs[c].players[player]={g:0,w:0};
-        cs[c].players[player].g++; if(s.result==='Win') cs[c].players[player].w++;
-      }
     });
   }
 
@@ -970,9 +986,6 @@ function renderChampPool(){
       </div>
       <span class="${wrClass(wr)}" style="font-size:13px;font-weight:700;min-width:34px;text-align:right">${wrPct}%</span>
     </div>`;
-    const players=Object.entries(s.players).sort((a,b)=>b[1].g-a[1].g)
-      .map(([name,ps])=>{const pwr=ps.g?ps.w/ps.g:0;return`<span style="font-size:11px;color:${pwr>=0.6?'var(--win)':pwr>=0.4?'var(--warn)':'var(--loss)'}">${name} ${ps.w}/${ps.g}</span>`;})
-      .join(' <span style="color:var(--text3)">·</span> ');
     return`<tr>
       <td><div style="display:flex;align-items:center">${champCell(c)}${roleTag}</div></td>
       <td><span style="font-size:11px;color:var(--text3);background:rgba(255,255,255,.05);border-radius:4px;padding:2px 7px">${identity}</span></td>
@@ -980,9 +993,8 @@ function renderChampPool(){
       <td style="color:var(--win)">${s.w}</td>
       <td style="color:var(--loss)">${s.g-s.w}</td>
       <td style="min-width:110px">${wrBar}</td>
-      <td style="font-size:11px;color:var(--text2)">${players||'—'}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:20px">No data</td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">No data</td></tr>';
 }
 
 function renderAnalysis(){
@@ -1057,13 +1069,18 @@ function renderAnalysis(){
     Object.entries(compStats).sort((a,b)=>b[1].g-a[1].g)
       .map(([c,st])=>barRow(c,st.w,st.g)).join('');
 
-  // ── Champion pool role tabs ───────────────────────────────────────────
-  const tabStyle='background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-family:var(--font-u);font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--text2);cursor:pointer;transition:all .15s';
-  const tabActiveStyle='background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);color:var(--accent)';
+  // ── Champion pool role tabs + player filters ─────────────────────────
+  champRoleTab = 'all';
+  champPlayerFilter = new Set(PLAYER_NAMES);
   const tabs=[['all','All'],['top','Top'],['jng','Jungle'],['mid','Mid'],['adc','ADC'],['sup','Support']];
   document.getElementById('champ-pool-tabs').innerHTML=tabs.map(([r,label])=>
-    `<button style="${tabStyle}${r===champRoleTab?';'+tabActiveStyle:''}" onclick="setChampRoleTab('${r}',this)">${label}</button>`
+    `<button style="${_roleBtnStyle(r===champRoleTab)}" onclick="setChampRoleTab('${r}',this)">${label}</button>`
   ).join('');
+  document.getElementById('champ-player-filters').innerHTML=
+    `<span style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-right:4px;align-self:center">Players:</span>`+
+    PLAYER_NAMES.map(n=>
+      `<button style="${_playerBtnStyle(true)}" onclick="togglePlayerFilter('${n}',this)">${n}</button>`
+    ).join('');
   renderChampPool();
 
   // ── Draft intel ───────────────────────────────────────────────────────
