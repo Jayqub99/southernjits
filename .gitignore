@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Netlify build artifacts (keep source, skip build outputs)
+.netlify/
+
+# Old backups
+southern_jits_scrims_updated_5.html
