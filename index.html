@@ -1882,6 +1882,27 @@ async function fetchSoloQ(player){
 
   const soloRank = ranks.find(r=>r.queueType==='RANKED_SOLO_5x5');
 
+  // LP delta tracking — compare current LP to last stored value (same rank only)
+  let lpDelta = null;
+  let rankChanged = false;
+  if(soloRank){
+    const lpKey  = `sjs_lp_${player.name}`;
+    const rkKey  = `sjs_rk_${player.name}`;
+    const curRank = `${soloRank.tier}_${soloRank.rank}`;
+    const curLP   = soloRank.leaguePoints;
+    try {
+      const prevRank = localStorage.getItem(rkKey);
+      const prevLP   = parseInt(localStorage.getItem(lpKey));
+      if(prevRank && prevRank === curRank && !isNaN(prevLP)){
+        lpDelta = curLP - prevLP;
+      } else if(prevRank && prevRank !== curRank){
+        rankChanged = true;
+      }
+      localStorage.setItem(lpKey, curLP);
+      localStorage.setItem(rkKey, curRank);
+    } catch(e){}
+  }
+
   // Fetch recent ranked match history (non-blocking — failures just return empty)
   let matches = [];
   try {
@@ -1889,19 +1910,38 @@ async function fetchSoloQ(player){
     if (mRes.ok) matches = await mRes.json();
   } catch(e) { /* match history is optional — degrade gracefully */ }
 
-  return {player, puuid: acct.puuid, soloRank, matches};
+  return {player, puuid: acct.puuid, soloRank, matches, lpDelta, rankChanged};
 }
 
 function renderSoloQCard(data){
-  const {player, soloRank, matches} = data;
+  const {player, soloRank, matches, lpDelta, rankChanged} = data;
   const tier = soloRank ? soloRank.tier : 'UNRANKED';
   const color = tier !== 'UNRANKED' ? (TIER_COLORS[tier]||'var(--text)') : 'var(--text3)';
   const rankStr = tier !== 'UNRANKED' ? `${tier} ${soloRank.rank}` : 'UNRANKED';
-  const lp = soloRank ? `${soloRank.leaguePoints} LP` : '';
+  const lp = soloRank ? soloRank.leaguePoints : null;
   const wins = soloRank ? soloRank.wins : 0;
   const losses = soloRank ? soloRank.losses : 0;
   const wr = (wins+losses) > 0 ? ((wins/(wins+losses))*100).toFixed(0) : 0;
   const wrColor = wr>=55?'var(--win)':wr>=50?'var(--gold)':'var(--loss)';
+
+  // LP delta badge
+  let lpDeltaHtml = '';
+  if(rankChanged){
+    lpDeltaHtml = `<span style="font-size:11px;color:var(--gold);font-weight:700;margin-left:6px">★ Rank changed</span>`;
+  } else if(lpDelta !== null && lpDelta !== 0){
+    const up = lpDelta > 0;
+    lpDeltaHtml = `<span style="font-size:12px;font-weight:700;color:${up?'var(--win)':'var(--loss)'};margin-left:6px">${up?'↑ +':'↓ '}${lpDelta} LP</span>`;
+  }
+
+  // Recent form dots from match history (oldest → newest, left → right)
+  const formDots = (matches||[]).length > 0
+    ? `<div style="display:flex;gap:4px;padding:10px 22px 12px;border-bottom:1px solid var(--border);align-items:center">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-right:4px">Recent</span>
+        ${[...(matches||[])].reverse().map(m=>
+          `<div title="${m.win?'Win':'Loss'} · ${m.champion}" style="width:10px;height:10px;border-radius:50%;background:${m.win?'var(--win)':'var(--loss)'};flex-shrink:0"></div>`
+        ).join('')}
+      </div>`
+    : '';
 
   const posLabel = {TOP:'Top',JUNGLE:'Jng',MIDDLE:'Mid',BOTTOM:'Bot',UTILITY:'Sup'};
 
@@ -1939,9 +1979,12 @@ function renderSoloQCard(data){
       </div>
       <div style="text-align:right">
         <div style="font-family:var(--font-d);font-size:20px;font-weight:900;color:${color}">${rankStr}</div>
-        <div style="font-size:13px;color:var(--text2)">${lp}</div>
+        <div style="font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:flex-end;gap:4px">
+          ${lp !== null ? `${lp} LP` : ''}${lpDeltaHtml}
+        </div>
       </div>
     </div>
+    ${formDots}
     <div class="player-stats-row">
       <div class="player-stat"><div class="player-stat-label">Wins</div><div class="player-stat-val" style="color:var(--win)">${wins}</div></div>
       <div class="player-stat"><div class="player-stat-label">Losses</div><div class="player-stat-val" style="color:var(--loss)">${losses}</div></div>
