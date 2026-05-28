@@ -820,10 +820,17 @@ function kdaColor(ratio){
 // ── DATA RANGE ────────────────────────────────────────────────────────────
 const DATA_FROM = '2026-05-04'; // core roster era start
 let showAllData = false;
+// Normalize M/D/YYYY → YYYY-MM-DD so date strings are directly comparable.
+function normDate(d){
+  if(!d) return '';
+  const p=d.split('/');
+  if(p.length===3) return `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
+  return d; // already YYYY-MM-DD or unknown — leave as-is
+}
 // Returns the scrims array filtered by the active date range.
 // Render functions use this instead of the raw scrims array so the
 // "Since May 4" / "All Time" toggle works everywhere automatically.
-function vs(){ return showAllData ? scrims : scrims.filter(s=>s.date>=DATA_FROM); }
+function vs(){ return showAllData ? scrims : scrims.filter(s=>normDate(s.date)>=DATA_FROM); }
 // Always looks up a scrim's index in the GLOBAL array — safe to call even
 // from render functions that shadow 'scrims' with vs() locally.
 function realIdx(s){ return scrims.indexOf(s); }
