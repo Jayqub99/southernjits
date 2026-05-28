@@ -175,6 +175,9 @@ tbody td{padding:12px 14px;color:var(--text)}
 .role-filter-btn:hover .role-icon-svg path{fill:var(--text)}
 .role-filter-btn.active .role-icon-svg path{fill:var(--accent)}
 .player-role-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(233,69,96,.1);color:var(--accent);border:1px solid rgba(233,69,96,.2);border-radius:4px;padding:2px 8px}
+.data-range-btn{background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text3);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;padding:5px 14px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.data-range-btn:hover{border-color:rgba(245,166,35,.4);color:var(--text)}
+.data-range-btn.active{background:rgba(245,166,35,.1);border-color:var(--gold);color:var(--gold)}
 .player-select-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .player-select-btn{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;padding:7px 16px;cursor:pointer;transition:all .2s;text-transform:uppercase}
 .player-select-btn:hover{border-color:rgba(74,144,217,.4);color:var(--text)}
@@ -350,6 +353,13 @@ tbody td{padding:12px 14px;color:var(--text)}
 </div>
 
 <main>
+  <!-- DATA RANGE TOGGLE -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Viewing:</span>
+    <button id="dr-from" class="data-range-btn active" onclick="toggleDataRange(false)">Since May 4</button>
+    <button id="dr-all" class="data-range-btn" onclick="toggleDataRange(true)">All Time</button>
+  </div>
+
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
     <div class="stat-grid" id="stat-grid"></div>
@@ -807,6 +817,24 @@ function kdaColor(ratio){
   return '#e74c3c';
 }
 
+// ── DATA RANGE ────────────────────────────────────────────────────────────
+const DATA_FROM = '2026-05-04'; // core roster era start
+let showAllData = false;
+// Returns the scrims array filtered by the active date range.
+// Render functions use this instead of the raw scrims array so the
+// "Since May 4" / "All Time" toggle works everywhere automatically.
+function vs(){ return showAllData ? scrims : scrims.filter(s=>s.date>=DATA_FROM); }
+// Always looks up a scrim's index in the GLOBAL array — safe to call even
+// from render functions that shadow 'scrims' with vs() locally.
+function realIdx(s){ return scrims.indexOf(s); }
+
+function toggleDataRange(all){
+  showAllData = all;
+  document.querySelectorAll('.data-range-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(all?'dr-all':'dr-from').classList.add('active');
+  renderAll();
+}
+
 // ── FILTER STATE ──────────────────────────────────────────────────────────
 let activeFilter = null; // 'Win' | 'Loss' | null
 
@@ -818,6 +846,7 @@ function clearFilter(){activeFilter=null;renderDashboard();}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
 function renderDashboard(){
+  const scrims=vs();
   const total=scrims.length,wins=scrims.filter(s=>s.result==='Win').length,losses=total-wins;
   const wr=total?(wins/total*100).toFixed(1):0;
   document.getElementById('stat-grid').innerHTML=`
@@ -861,9 +890,10 @@ function toggleDateSort(){
 
 function renderScrims(){
   // Group by opponent+date, sort groups, keep G1>G2>G3 within each group
+  const viewScrims = vs(); // filtered; keep outer `scrims` intact for indexOf/openDetail
   const grouped = [];
   const seen = {};
-  [...scrims].forEach((s,i) => {
+  [...viewScrims].forEach((s,i) => {
     const key = s.date + '|' + s.opponent;
     if(!seen[key]) { seen[key] = []; grouped.push(seen[key]); }
     seen[key].push(s);
@@ -962,6 +992,7 @@ function togglePlayerFilter(name, btn){
 }
 
 function renderChampPool(){
+  const scrims=vs();
   const roleLabel={top:'Top',jng:'Jng',mid:'Mid',adc:'ADC',sup:'Sup'};
   const cs={};
   const allPlayersSelected = champPlayerFilter.size === PLAYER_NAMES.length;
@@ -1013,6 +1044,7 @@ function renderChampPool(){
 }
 
 function renderAnalysis(){
+  const scrims=vs();
   const total=scrims.length;
   if(!total) return;
 
@@ -1171,6 +1203,7 @@ function setChampFilter(playerName, champion) {
 }
 
 function renderPlayers(){
+  const scrims=vs();
   // Full-width layout — one card per player, history always visible
   const sortedPlayers = [...PLAYERS].sort((a,b)=>{
     const ag=scrims.filter(s=>s.players&&ROLES.some(r=>s.players[r]===a.name)).length;
@@ -1252,7 +1285,7 @@ function renderPlayers(){
       const champ=s[role]||'';
       const kda=s.kda&&s.kda[role]?s.kda[role]:'—';
       const ratio=kdaRatio(s.kda&&s.kda[role]);
-      const idx=scrims.indexOf(s);
+      const idx=realIdx(s); // realIdx always uses global scrims — correct even with local shadow
       return`<tr onclick="openDetail(${idx})" style="border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;transition:background .15s" onmouseenter="this.style.background='rgba(255,255,255,.04)'" onmouseleave="this.style.background=''">
         <td style="padding:9px 12px;font-size:13px;white-space:nowrap">${fmtDate(s.date)}</td>
         <td style="padding:9px 12px;font-size:13px">${esc(s.opponent)}</td>
