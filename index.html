@@ -1937,7 +1937,7 @@ function renderSoloQCard(data){
   const formDots = (matches||[]).length > 0
     ? `<div style="display:flex;gap:4px;padding:10px 22px 12px;border-bottom:1px solid var(--border);align-items:center">
         <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-right:4px">Recent</span>
-        ${[...(matches||[])].reverse().map(m=>
+        ${(matches||[]).map(m=>
           `<div title="${m.win?'Win':'Loss'} · ${m.champion}" style="width:10px;height:10px;border-radius:50%;background:${m.win?'var(--win)':'var(--loss)'};flex-shrink:0"></div>`
         ).join('')}
       </div>`
