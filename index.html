@@ -1599,14 +1599,14 @@ function handleSearch(q){
     html.push(`<div class="search-section-label">Champions</div>`);
     champHits.slice(0,5).forEach(champ=>{
       const ourGames=[];
-      S.forEach((s,i)=>{
+      S.forEach((s)=>{
         const role=ROLES.find(r=>s[r]===champ);
-        if(role) ourGames.push({s,i,role,player:s.players?.[role]||''});
+        if(role) ourGames.push({s,idx:realIdx(s),role,player:s.players?.[role]||''});
       });
       const enemyGames=[];
-      S.forEach((s,i)=>{
+      S.forEach((s)=>{
         const role=ROLES.find(r=>s[ekeys[r]]===champ);
-        if(role) enemyGames.push({s,i,role});
+        if(role) enemyGames.push({s,idx:realIdx(s),role});
       });
       const ourW=ourGames.filter(g=>g.s.result==='Win').length;
       const enyW=enemyGames.filter(g=>g.s.result==='Win').length;
@@ -1614,7 +1614,7 @@ function handleSearch(q){
       if(ourGames.length) parts.push(`Us: ${ourGames.length}G ${ourW}W ${ourGames.length-ourW}L`);
       if(enemyGames.length) parts.push(`vs: ${enemyGames.length}G ${enyW}W`);
       // first game for click-through
-      const firstIdx = ourGames[0]?.i ?? enemyGames[0]?.i ?? -1;
+      const firstIdx = ourGames[0]?.idx ?? enemyGames[0]?.idx ?? -1;
       html.push(`<div class="search-result-item" onclick="${firstIdx>=0?`searchClick(${firstIdx})`:'void(0)'}">
         <span class="search-result-label" style="color:var(--gold)">Champ</span>
         <div style="display:flex;align-items:center;gap:10px">
