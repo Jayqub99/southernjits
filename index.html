@@ -880,7 +880,7 @@ function renderDashboard(){
   document.getElementById('clear-filter').style.display = activeFilter ? 'inline-block' : 'none';
   const display = activeFilter ? filtered : [...scrims].reverse().slice(0,10);
   document.querySelector('#dashboard-table tbody').innerHTML = display.map((s,i)=>`
-    <tr onclick="openDetail(${scrims.indexOf(s)})">
+    <tr onclick="openDetail(${realIdx(s)})" style="cursor:pointer">
       <td>${fmtDate(s.date)}</td><td>${esc(s.opponent)}</td><td>${esc(s.game)}</td>
       <td><span class="${s.result==='Win'?'badge-win':'badge-loss'}">${s.result}</span></td>
       ${ROLES.map(r=>`<td>${champCell(s[r])}</td>`).join('')}
