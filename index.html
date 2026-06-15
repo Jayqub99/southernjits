@@ -2659,7 +2659,12 @@ function renderMatchups(){
       const ksIcon = r?.keystoneIcon ? `<img src="${MU_RIMG}${r.keystoneIcon}" width="22" height="22" style="border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">` : '';
       const secName = r?.secondaryPath || m.secondary || '';
       const secRunes = r?.secondaryNames || [];
-      const secIcons = r?.secondaryIcons || [];
+      const secIcons = [...(r?.secondaryIcons || [])];
+      // Backfill missing icons from loaded rune data
+      if(secIcons.length < secRunes.length && muRuneData && r?.secondaryPathId){
+        const sp = muRuneData.find(p=>p.id===r.secondaryPathId);
+        if(sp) secRunes.forEach((name,i)=>{ if(!secIcons[i]){ for(const slot of sp.slots){ const ru=slot.runes.find(r=>r.name===name); if(ru){secIcons[i]=ru.icon;break;} } } });
+      }
       const secDetail = secRunes.length
         ? secRunes.map((n,i) => `${secIcons[i]?`<img src="${MU_RIMG}${secIcons[i]}" width="16" height="16" style="border-radius:50%;vertical-align:middle;margin-right:2px" onerror="this.style.display='none'">`:''}${esc(n)}`).join('<span style="color:var(--border)"> · </span>')
         : secName ? esc(secName) : '';
