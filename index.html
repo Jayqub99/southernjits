@@ -2707,10 +2707,16 @@ function muFilterItems(){
   const matches = ITEMS_LIST.filter(i=>i.toLowerCase().includes(q) && !muSelectedItems.includes(i)).slice(0,12);
   if(!matches.length){ dd.style.display='none'; return; }
   dd.innerHTML = matches.map(i=>
-    `<div onclick="event.stopPropagation();muAddItem('${i.replace(/'/g,"\\'")})" style="padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">${muItemImg(i,20)}${esc(i)}</div>`
+    `<div data-mu-item="${i.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" style="padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">${muItemImg(i,20)}${esc(i)}</div>`
   ).join('');
   dd.style.display='block';
 }
+// Delegated mousedown on dropdown — fires before input blur, no inline JS escaping issues
+document.getElementById('mu-items-dropdown').addEventListener('mousedown', function(e){
+  e.preventDefault();
+  const row = e.target.closest('[data-mu-item]');
+  if(row) muAddItem(row.getAttribute('data-mu-item'));
+});
 function muKeydown(e){
   if(e.key==='Escape'){ document.getElementById('mu-items-dropdown').style.display='none'; }
   if(e.key==='Enter'){
