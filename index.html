@@ -2656,9 +2656,11 @@ function renderMatchups(){
       const pathColor = r?.primaryPathId ? muPC(r.primaryPathId) : 'var(--text2)';
       const ksIcon = r?.keystoneIcon ? `<img src="${MU_RIMG}${r.keystoneIcon}" width="22" height="22" style="border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">` : '';
       const secName = r?.secondaryPath || m.secondary || '';
+      const secRunes = r?.secondaryNames || [];
+      const secDetail = secRunes.length ? secRunes.map(n=>esc(n)).join(', ') : secName;
       return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         ${ksIcon}<span style="font-size:12px;font-weight:700;color:${pathColor}">${esc(ksName)}</span>
-        ${secName?`<span style="font-size:11px;color:var(--text3)">+ ${esc(secName)}</span>`:''}
+        ${secDetail?`<span style="font-size:11px;color:var(--text3)">+ ${secDetail}</span>`:''}
       </div>`;
     })();
 
