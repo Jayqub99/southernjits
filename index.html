@@ -922,8 +922,8 @@ function renderScrims(){
     seen[key].push(s);
   });
   if(!scrimSortAsc) grouped.reverse();
-  const orderedScrims = grouped.flat();
-  document.querySelector('#all-table tbody').innerHTML=orderedScrims.map(s=>{
+  const colSpan = 9;
+  const renderRow = s => {
     const idx=scrims.indexOf(s);
     return `<tr onclick="openDetail(${idx})" style="cursor:pointer">
       <td style="white-space:nowrap;vertical-align:top;padding-top:14px">${fmtDate(s.date)}</td>
@@ -952,6 +952,15 @@ function renderScrims(){
       </td>
       <td style="vertical-align:top;padding-top:14px" onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></td>
     </tr>`;
+  };
+  document.querySelector('#all-table tbody').innerHTML = grouped.map((group, gi) => {
+    const rows = group.map(renderRow).join('');
+    const spacer = gi < grouped.length - 1
+      ? `<tr><td colspan="${colSpan}" style="padding:0;height:10px;background:transparent;border:none;pointer-events:none"></td></tr>
+         <tr><td colspan="${colSpan}" style="padding:0;height:1px;background:rgba(255,255,255,0.06);border:none;pointer-events:none"></td></tr>
+         <tr><td colspan="${colSpan}" style="padding:0;height:10px;background:transparent;border:none;pointer-events:none"></td></tr>`
+      : '';
+    return rows + spacer;
   }).join('');
 }
 
