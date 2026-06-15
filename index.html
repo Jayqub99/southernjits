@@ -943,7 +943,7 @@ function renderScrims(){
           <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 0"></div>
           <div style="display:flex;gap:2px;align-items:center">
             <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--loss);width:32px;flex-shrink:0">ENE</span>
-            ${['etop','ejng','emid','eadc','esup'].map(r=>`<div style="min-width:120px">${champCell(s[r])}</div>`).join('')}
+            ${['etop','ejng','emid','eadc','esup'].map((r,i)=>{const role=ROLES[i];return`<div style="display:flex;flex-direction:column;gap:2px;min-width:120px">${champCell(s[r])}${s.eplayers&&s.eplayers[role]?`<span class="player-tag">${esc(s.eplayers[role])}</span>`:''}</div>`;}).join('')}
           </div>
         </div>
       </td>
@@ -1422,7 +1422,9 @@ function openDetail(idx){
         ${ROLES.map(r=>`<div class="detail-pick-row">
           <span class="detail-role">${roleLabels[r]}</span>
           <div>${champCell(s[ekeys[r]])}</div>
-          <div></div>
+          <div style="text-align:right">
+            ${s.eplayers&&s.eplayers[r]?`<div class="player-tag" style="font-size:13px">${esc(s.eplayers[r])}</div>`:''}
+          </div>
         </div>`).join('')}
       </div>
     </div>
@@ -1455,6 +1457,8 @@ function openLogModal(){
       <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><input type="text" class="form-input" id="lk${g}${r.toLowerCase()}" placeholder="0/0/0"></div>`).join('')}</div>
       <div class="sub-label enemy">Enemy Champions</div>
       <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><select class="form-select" id="le${g}${r.toLowerCase()}"><option value="">—</option>${co}</select></div>`).join('')}</div>
+      <div class="sub-label enemy">Enemy Players</div>
+      <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><input type="text" class="form-input" id="lep${g}${r.toLowerCase()}" placeholder="Summoner ID"></div>`).join('')}</div>
       <div class="form-group" style="margin-top:10px"><label class="form-label">Notes</label><input type="text" class="form-input" id="ln${g}" placeholder="Optional..."></div>
     </div>`).join('');
   [1,2,3].forEach(g=>logResults[g]='Win');
@@ -1492,6 +1496,13 @@ function saveLog(){
       emid:document.getElementById(`le${g}mid`).value,
       eadc:document.getElementById(`le${g}adc`).value,
       esup:document.getElementById(`le${g}sup`).value,
+      eplayers:{
+        top:document.getElementById(`lep${g}top`).value.trim(),
+        jng:document.getElementById(`lep${g}jng`).value.trim(),
+        mid:document.getElementById(`lep${g}mid`).value.trim(),
+        adc:document.getElementById(`lep${g}adc`).value.trim(),
+        sup:document.getElementById(`lep${g}sup`).value.trim(),
+      },
       notes:document.getElementById(`ln${g}`).value,
       players,kda,
     });
@@ -1524,6 +1535,8 @@ function openEditModal(idx){
     <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><input type="text" class="form-input" id="ek${r.toLowerCase()}" placeholder="0/0/0" value="${s.kda&&s.kda[r.toLowerCase()]||''}"></div>`).join('')}</div>
     <div class="sub-label enemy">Enemy Champions</div>
     <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><select class="form-select" id="ee${r.toLowerCase()}"><option value="">—</option>${co}</select></div>`).join('')}</div>
+    <div class="sub-label enemy">Enemy Players</div>
+    <div class="form-row-5">${ROLE_LABELS.map(r=>`<div class="form-group"><label class="form-label">${r}</label><input type="text" class="form-input" id="eep${r.toLowerCase()}" placeholder="Summoner ID"></div>`).join('')}</div>
     <div class="form-group" style="margin-top:10px"><label class="form-label">Notes</label><input type="text" class="form-input" id="ed-notes" value="${esc(s.notes||'')}"></div>
   `;
   // Pre-fill
@@ -1535,6 +1548,7 @@ function openEditModal(idx){
     document.getElementById(`ep${k}`).value = s.players&&s.players[k]?s.players[k]:'';
     const ekey={top:'etop',jng:'ejng',mid:'emid',adc:'eadc',sup:'esup'}[k];
     document.getElementById(`ee${k}`).value = s[ekey]||'';
+    document.getElementById(`eep${k}`).value = s.eplayers&&s.eplayers[k]?s.eplayers[k]:'';
   });
   document.getElementById('edit-modal').classList.add('open');
 }
@@ -1560,6 +1574,13 @@ function saveEdit(){
     etop:document.getElementById('eetop').value,ejng:document.getElementById('eejng').value,
     emid:document.getElementById('eemid').value,eadc:document.getElementById('eeadc').value,
     esup:document.getElementById('eesup').value,
+    eplayers:{
+      top:document.getElementById('eeptop').value.trim(),
+      jng:document.getElementById('eepjng').value.trim(),
+      mid:document.getElementById('eepmid').value.trim(),
+      adc:document.getElementById('eepadc').value.trim(),
+      sup:document.getElementById('eepsup').value.trim(),
+    },
     players,kda,
   };
   save();closeEditModal();renderAll();toast('✓ Changes saved!');
