@@ -328,6 +328,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     <button class="nav-btn" onclick="showPage('analysis',this)">Analysis & Draft</button>
     <button class="nav-btn" onclick="showPage('players',this)">Players</button>
     <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
+    <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
     <a href="/adl-league.html" class="nav-btn" style="text-decoration:none">ADL League</a>
   </nav>
   <div class="header-search">
@@ -530,6 +531,30 @@ tbody td{padding:12px 14px;color:var(--text)}
     <div id="soloq-status" style="display:none;padding:16px;color:var(--text2);font-size:14px;text-align:center"></div>
     <div class="player-grid" id="soloq-grid"></div>
   </div>
+
+  <div id="page-matchups" class="page">
+    <div class="section-header">
+      <span class="section-title">Matchup Notes</span>
+      <div class="section-line"></div>
+      <button id="add-matchup-btn" style="display:none;background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.3);color:var(--accent);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0" onclick="openMatchupModal()">+ Add Matchup</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
+      <select id="mu-filter-role" class="form-select" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderMatchups()">
+        <option value="">All Roles</option>
+        <option value="top">Top</option>
+        <option value="jng">Jungle</option>
+        <option value="mid">Mid</option>
+        <option value="adc">ADC</option>
+        <option value="sup">Support</option>
+      </select>
+      <select id="mu-filter-author" class="form-select" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderMatchups()">
+        <option value="">All Players</option>
+      </select>
+      <input id="mu-search" class="form-input" type="text" placeholder="Search champion or notes..." style="width:220px;padding:6px 12px;font-size:12px" oninput="renderMatchups()">
+    </div>
+    <div id="matchup-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
+    <div id="matchup-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:14px">No matchup notes yet. Add the first one!</div>
+  </div>
 </main>
 
 <!-- LOG SCRIM MODAL -->
@@ -577,6 +602,61 @@ tbody td{padding:12px 14px;color:var(--text)}
       <button class="modal-close" aria-label="Close" onclick="document.getElementById('detail-modal').classList.remove('open')">✕</button>
     </div>
     <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- MATCHUP MODAL -->
+<div class="modal-overlay" id="matchup-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="matchup-modal-title">Add Matchup Note</div>
+      <button class="modal-close" onclick="closeMatchupModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-select" id="mu-role">
+            <option value="top">Top</option>
+            <option value="jng">Jungle</option>
+            <option value="mid">Mid</option>
+            <option value="adc">ADC</option>
+            <option value="sup">Support</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Author</label>
+          <select class="form-select" id="mu-author"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Our Champion <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+          <select class="form-select" id="mu-champ"><option value="">— Any —</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">vs Champion</label>
+          <select class="form-select" id="mu-vs"><option value="">— Select —</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Runes</label>
+        <input type="text" class="form-input" id="mu-runes" placeholder="e.g. Grasp of the Undying, Second Wind, Shield Bash">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Items / Build</label>
+        <input type="text" class="form-input" id="mu-items" placeholder="e.g. Trinity Force rush, Plated Steelcaps">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="mu-notes" rows="3" placeholder="Tips, game plan, win conditions..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="mu-delete-btn" style="display:none" onclick="deleteMatchup()">Delete</button>
+      <button class="btn btn-ghost" onclick="closeMatchupModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMatchup()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -2306,6 +2386,126 @@ async function refreshSoloQ(){
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────
+// ── MATCHUPS ──────────────────────────────────────────────────────────────
+let matchups = [];
+try { const r = localStorage.getItem('sjs_matchups'); if(r) matchups = JSON.parse(r); } catch(e){}
+
+function saveMatchups(){ try{ localStorage.setItem('sjs_matchups', JSON.stringify(matchups)); }catch(e){} }
+
+function renderMatchups(){
+  const role   = document.getElementById('mu-filter-role').value;
+  const author = document.getElementById('mu-filter-author').value;
+  const q      = (document.getElementById('mu-search').value||'').toLowerCase();
+
+  // Populate author filter
+  const authors = [...new Set(matchups.map(m=>m.author).filter(Boolean))].sort();
+  const af = document.getElementById('mu-filter-author');
+  const cur = af.value;
+  af.innerHTML = '<option value="">All Players</option>' + authors.map(a=>`<option value="${a}"${a===cur?'selected':''}>${a}</option>`).join('');
+
+  let list = matchups.filter(m => {
+    if(role   && m.role   !== role)   return false;
+    if(author && m.author !== author) return false;
+    if(q && !([m.champ,m.vs,m.notes,m.runes,m.items,m.author].join(' ').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  // Most recent first
+  list = [...list].reverse();
+
+  const grid  = document.getElementById('matchup-grid');
+  const empty = document.getElementById('matchup-empty');
+  if(!list.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const roleLabel = {top:'Top',jng:'Jungle',mid:'Mid',adc:'ADC',sup:'Support'};
+  grid.innerHTML = list.map(m => {
+    const idx = matchups.indexOf(m);
+    const champImg = m.champ ? `<div style="display:flex;align-items:center;gap:6px">${champCell(m.champ)}</div>` : '<span style="color:var(--text3);font-size:12px">Any</span>';
+    const vsImg    = m.vs    ? `<div style="display:flex;align-items:center;gap:6px">${champCell(m.vs)}</div>`    : '<span style="color:var(--text3);font-size:12px">?</span>';
+    return `<div class="panel" style="padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer" onclick="openMatchupModal(${idx})">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${champImg}
+          <span style="color:var(--text3);font-size:13px;font-weight:700">vs</span>
+          ${vsImg}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);background:var(--bg3);padding:2px 7px;border-radius:4px">${roleLabel[m.role]||m.role}</span>
+          ${m.author?`<span class="player-tag">${esc(m.author)}</span>`:''}
+        </div>
+      </div>
+      ${m.runes?`<div style="font-size:12px"><span style="color:var(--text3);font-weight:700;margin-right:6px">RUNES</span><span style="color:var(--text2)">${esc(m.runes)}</span></div>`:''}
+      ${m.items?`<div style="font-size:12px"><span style="color:var(--text3);font-weight:700;margin-right:6px">BUILD</span><span style="color:var(--text2)">${esc(m.items)}</span></div>`:''}
+      ${m.notes?`<div style="font-size:13px;color:var(--text);line-height:1.5;border-top:1px solid var(--border);padding-top:8px">${esc(m.notes)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+let editMatchupIdx = -1;
+function openMatchupModal(idx){
+  editMatchupIdx = (idx !== undefined) ? idx : -1;
+  const m = editMatchupIdx >= 0 ? matchups[editMatchupIdx] : null;
+  document.getElementById('matchup-modal-title').textContent = m ? 'Edit Matchup' : 'Add Matchup Note';
+  document.getElementById('mu-delete-btn').style.display = m ? '' : 'none';
+
+  // Populate champ selects
+  const co = CHAMPS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('mu-champ').innerHTML = `<option value="">— Any —</option>${co}`;
+  document.getElementById('mu-vs').innerHTML    = `<option value="">— Select —</option>${co}`;
+
+  // Populate author select
+  document.getElementById('mu-author').innerHTML = PLAYER_NAMES.map(p=>`<option value="${p}">${p}</option>`).join('');
+
+  if(m){
+    document.getElementById('mu-role').value   = m.role   || 'top';
+    document.getElementById('mu-author').value = m.author || '';
+    document.getElementById('mu-champ').value  = m.champ  || '';
+    document.getElementById('mu-vs').value     = m.vs     || '';
+    document.getElementById('mu-runes').value  = m.runes  || '';
+    document.getElementById('mu-items').value  = m.items  || '';
+    document.getElementById('mu-notes').value  = m.notes  || '';
+  } else {
+    document.getElementById('mu-role').value   = 'top';
+    document.getElementById('mu-author').value = PLAYER_NAMES[0]||'';
+    document.getElementById('mu-champ').value  = '';
+    document.getElementById('mu-vs').value     = '';
+    document.getElementById('mu-runes').value  = '';
+    document.getElementById('mu-items').value  = '';
+    document.getElementById('mu-notes').value  = '';
+  }
+  document.getElementById('matchup-modal').classList.add('open');
+}
+function closeMatchupModal(){ document.getElementById('matchup-modal').classList.remove('open'); editMatchupIdx=-1; }
+function saveMatchup(){
+  const vs = document.getElementById('mu-vs').value;
+  if(!vs){ alert('Please select an enemy champion.'); return; }
+  const entry = {
+    role:   document.getElementById('mu-role').value,
+    author: document.getElementById('mu-author').value,
+    champ:  document.getElementById('mu-champ').value,
+    vs,
+    runes:  document.getElementById('mu-runes').value.trim(),
+    items:  document.getElementById('mu-items').value.trim(),
+    notes:  document.getElementById('mu-notes').value.trim(),
+    date:   new Date().toLocaleDateString('en-US'),
+  };
+  if(editMatchupIdx >= 0) matchups[editMatchupIdx] = entry;
+  else matchups.push(entry);
+  saveMatchups();
+  closeMatchupModal();
+  renderMatchups();
+  toast('✓ Matchup saved!');
+}
+function deleteMatchup(){
+  if(editMatchupIdx < 0) return;
+  if(!confirm('Delete this matchup note?')) return;
+  matchups.splice(editMatchupIdx, 1);
+  saveMatchups();
+  closeMatchupModal();
+  renderMatchups();
+  toast('Matchup deleted.', 'var(--loss)');
+}
+
 function showPage(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -2319,6 +2519,7 @@ function showPage(page,btn){
 
   if(page==='scrims')renderScrims();
   if(page==='players')renderPlayers();
+  if(page==='matchups')renderMatchups();
 }
 
 function renderAll(){
@@ -2460,8 +2661,8 @@ document.addEventListener('click', function(e){
     if(val === PASS){
       unlocked = true;
       document.getElementById('vm-style').textContent = '';
-      ['log-btn-el','import-btn-el','export-btn-el','notif-btn'].forEach(function(id){
-        document.getElementById(id).style.display = '';
+      ['log-btn-el','import-btn-el','export-btn-el','notif-btn','add-matchup-btn'].forEach(function(id){
+        const el = document.getElementById(id); if(el) el.style.display = '';
       });
       const riotSection = document.getElementById('riot-id-section');
       if(riotSection){ riotSection.style.display = 'block'; renderRiotIdSection(); }
