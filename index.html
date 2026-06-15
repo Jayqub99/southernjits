@@ -607,12 +607,12 @@ tbody td{padding:12px 14px;color:var(--text)}
 
 <!-- MATCHUP MODAL -->
 <div class="modal-overlay" id="matchup-modal">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:640px">
     <div class="modal-header">
       <div class="modal-title" id="matchup-modal-title">Add Matchup Note</div>
       <button class="modal-close" onclick="closeMatchupModal()">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="overflow-y:auto;max-height:75vh">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Role</label>
@@ -639,21 +639,10 @@ tbody td{padding:12px 14px;color:var(--text)}
           <select class="form-select" id="mu-vs"><option value="">— Select —</option></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Keystone</label>
-          <select class="form-select" id="mu-keystone"><option value="">— None —</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Secondary Path</label>
-          <select class="form-select" id="mu-secondary">
-            <option value="">— None —</option>
-            <option value="Precision">Precision</option>
-            <option value="Domination">Domination</option>
-            <option value="Sorcery">Sorcery</option>
-            <option value="Resolve">Resolve</option>
-            <option value="Inspiration">Inspiration</option>
-          </select>
+      <div class="form-group">
+        <label class="form-label">Runes</label>
+        <div id="mu-rune-picker" style="background:var(--bg3);border-radius:8px;padding:14px;border:1px solid var(--border)">
+          <div style="color:var(--text3);font-size:12px">Loading...</div>
         </div>
       </div>
       <div class="form-group">
@@ -2404,45 +2393,29 @@ async function refreshSoloQ(){
 
 // ── NAV ───────────────────────────────────────────────────────────────────
 // ── MATCHUPS ──────────────────────────────────────────────────────────────
-const RUNE_PATHS = [
-  {name:'Precision',   color:'#c8aa6e', keystones:['Conqueror','Fleet Footwork','Lethal Tempo','Press the Attack']},
-  {name:'Domination',  color:'#c9403a', keystones:['Dark Harvest','Electrocute','Hail of Blades','Predator']},
-  {name:'Sorcery',     color:'#5a9fe0', keystones:['Arcane Comet','Phase Rush','Summon Aery']},
-  {name:'Resolve',     color:'#4caf7d', keystones:['Aftershock','Grasp of the Undying','Guardian']},
-  {name:'Inspiration', color:'#49b8c2', keystones:['First Strike','Glacial Augment','Unsealed Spellbook']},
-];
-
 const ITEMS_LIST = [
-  // Starters
   "Dark Seal","Doran's Blade","Doran's Ring","Doran's Shield","Corrupting Potion",
-  // Boots
   "Berserker's Greaves","Boots of Swiftness","Ionian Boots of Lucidity",
   "Mercury's Treads","Plated Steelcaps","Sorcerer's Shoes",
-  // Fighter / Bruiser
-  "Black Cleaver","Blade of the Ruined King","Cleaver","Dead Man's Plate",
+  "Black Cleaver","Blade of the Ruined King","Dead Man's Plate",
   "Frozen Heart","Gargoyle Stoneplate","Heartsteel","Iceborn Gauntlet",
   "Jak'Sho, The Protean","Maw of Malmortius","Ravenous Hydra","Serylda's Grudge",
   "Spear of Shojin","Sterak's Gage","Stridebreaker","Sunfire Aegis","Titanic Hydra",
   "Trinity Force","Wit's End",
-  // Tank
   "Abyssal Mask","Anathema's Chains","Bami's Cinder","Fimbulwinter",
-  "Force of Nature","Jak'Sho, The Protean","Knight's Vow","Randuin's Omen",
-  "Sunfire Aegis","Thornmail","Unending Despair","Warmog's Armor",
-  // ADC / Marksman
+  "Force of Nature","Knight's Vow","Randuin's Omen",
+  "Thornmail","Unending Despair","Warmog's Armor",
   "Bloodthirster","Galeforce","Guinsoo's Rageblade","Immortal Shieldbow",
   "Infinity Edge","Kraken Slayer","Lord Dominik's Regards","Mortal Reminder",
   "Navori Quickblades","Phantom Dancer","Rapid Firecannon","Runaan's Hurricane",
   "Statikk Shiv","The Collector","Terminus","Voltaic Cyclosword",
-  // Assassin
   "Axiom Arc","Duskblade of Draktharr","Eclipse","Edge of Night",
   "Opportunity","Prowler's Claw","Umbral Glaive","Youmuu's Ghostblade",
-  // Mage
   "Archangel's Staff","Banshee's Veil","Cosmic Drive","Crown of the Shattered Queen",
   "Demonic Embrace","Everfrost","Hextech Rocketbelt","Horizon Focus",
   "Liandry's Anguish","Luden's Tempest","Malignance","Morellonomicon",
   "Nashor's Tooth","Rabadon's Deathcap","Riftmaker","Rod of Ages",
   "Shadowflame","Stormsurge","Void Staff","Zhonya's Hourglass",
-  // Support
   "Ardent Censer","Imperial Mandate","Locket of the Iron Solari",
   "Moonstone Renewer","Redemption","Shurelya's Battlesong",
   "Staff of Flowing Water","Zeke's Convergence",
@@ -2450,15 +2423,207 @@ const ITEMS_LIST = [
 
 let matchups = [];
 try { const r = localStorage.getItem('sjs_matchups'); if(r) matchups = JSON.parse(r); } catch(e){}
-
 function saveMatchups(){ try{ localStorage.setItem('sjs_matchups', JSON.stringify(matchups)); }catch(e){} }
+
+// DDragon data cache
+const MU_RIMG = 'https://ddragon.leagueoflegends.com/cdn/img/';
+let muRuneData = null;   // runesReforged.json array
+let muItemMap  = null;   // lowercase name → {id, name}
+
+const MU_PC = {8000:'#c8aa6e',8100:'#c9403a',8200:'#5a9fe0',8300:'#49b8c2',8400:'#4caf7d'};
+const muPC = id => MU_PC[id] || 'var(--text2)';
+
+// Rune picker state
+let muRS = { primId:null, ksId:null, minor:[null,null,null], secId:null, sec:[null,null,null], secOrder:[] };
+
+async function muLoad() {
+  const base = `https://ddragon.leagueoflegends.com/cdn/${DDV}/data/en_US/`;
+  if (!muRuneData) {
+    try { muRuneData = await (await fetch(base+'runesReforged.json')).json(); }
+    catch(e) { muRuneData = []; }
+  }
+  if (!muItemMap) {
+    try {
+      const d = await (await fetch(base+'item.json')).json();
+      muItemMap = {};
+      Object.entries(d.data).forEach(([id,it]) => {
+        if (it.maps?.[11]) muItemMap[it.name.toLowerCase()] = { id, name: it.name };
+      });
+    } catch(e) { muItemMap = {}; }
+  }
+  // Inject hover CSS once
+  if (!document.getElementById('mu-css')) {
+    const s = document.createElement('style');
+    s.id = 'mu-css';
+    s.textContent = `.mu-ptab{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:opacity .15s}.mu-ptab:hover{opacity:.9!important}.mu-ricon img{transition:filter .15s,opacity .15s,border-color .1s}.mu-ricon:hover img{filter:none!important;opacity:1!important}`;
+    document.head.appendChild(s);
+  }
+}
+
+function muItemImg(name, size=18) {
+  const e = muItemMap?.[name?.toLowerCase()];
+  if (!e) return '';
+  return `<img src="https://ddragon.leagueoflegends.com/cdn/${DDV}/img/item/${e.id}.png" width="${size}" height="${size}" style="border-radius:3px;flex-shrink:0;object-fit:cover" onerror="this.style.display='none'">`;
+}
+
+// ── Rune picker ────────────────────────────────────────────────────────────
+
+function muRenderRunePicker() {
+  const el = document.getElementById('mu-rune-picker');
+  if (!el) return;
+  if (!muRuneData?.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0">Could not load rune data — check your connection.</div>';
+    return;
+  }
+
+  const paths = muRuneData;
+  const prim  = paths.find(p => p.id === muRS.primId);
+  const sec   = paths.find(p => p.id === muRS.secId);
+
+  const pathTab = (path, sel, clickFn, size) => {
+    const c = muPC(path.id);
+    return `<div onclick="${clickFn}" title="${path.name}" class="mu-ptab" style="opacity:${sel?1:0.4}">
+      <img src="${MU_RIMG}${path.icon}" width="${size}" height="${size}"
+           style="border-radius:50%;${sel?`outline:2px solid ${c};outline-offset:2px`:''}"
+           onerror="this.style.visibility='hidden'">
+      <span style="font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:${sel?c:'var(--text3)'}">${path.name}</span>
+    </div>`;
+  };
+
+  const runeIcon = (rune, sel, clickFn, size, pathId) => {
+    const c = muPC(pathId);
+    return `<div onclick="${clickFn}" title="${rune.name}" class="mu-ricon" style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <img src="${MU_RIMG}${rune.icon}" width="${size}" height="${size}"
+           style="border-radius:50%;border:2px solid ${sel?c:'transparent'};filter:${sel?'none':'grayscale(0.85)'};opacity:${sel?1:0.45}"
+           onerror="this.style.visibility='hidden'">
+    </div>`;
+  };
+
+  let html = '';
+
+  // Primary path tabs
+  html += `<div style="display:flex;gap:12px;margin-bottom:14px;justify-content:center;flex-wrap:wrap">`;
+  paths.forEach(p => html += pathTab(p, p.id===muRS.primId, `muSelectPrimary(${p.id})`, 38));
+  html += `</div>`;
+
+  if (prim) {
+    // Keystones
+    html += `<div style="border-radius:8px;background:rgba(0,0,0,.25);padding:10px 12px;margin-bottom:8px">`;
+    html += `<div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">KEYSTONE</div>`;
+    html += `<div style="display:flex;gap:10px;flex-wrap:wrap">`;
+    prim.slots[0].runes.forEach(r => html += runeIcon(r, r.id===muRS.ksId, `muSelectKeystone(${r.id})`, 48, muRS.primId));
+    html += `</div></div>`;
+
+    // Minor rune rows 1–3
+    html += `<div style="border-radius:8px;background:rgba(0,0,0,.25);padding:10px 12px">`;
+    for (let i = 1; i <= 3; i++) {
+      const slot = prim.slots[i];
+      if (!slot) continue;
+      if (i > 1) html += `<div style="height:1px;background:var(--border);margin:8px 0"></div>`;
+      html += `<div style="display:flex;gap:8px;flex-wrap:wrap">`;
+      slot.runes.forEach(r => html += runeIcon(r, muRS.minor[i-1]===r.id, `muSelectMinor(${i-1},${r.id})`, 34, muRS.primId));
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Secondary section
+  html += `<div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px">
+    <div style="height:1px;background:var(--border);flex:1"></div>
+    <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">SECONDARY (pick 2)</span>
+    <div style="height:1px;background:var(--border);flex:1"></div>
+  </div>`;
+
+  html += `<div style="display:flex;gap:12px;margin-bottom:12px;justify-content:center;flex-wrap:wrap">`;
+  paths.filter(p => p.id !== muRS.primId).forEach(p => html += pathTab(p, p.id===muRS.secId, `muSelectSecPath(${p.id})`, 30));
+  html += `</div>`;
+
+  if (sec) {
+    html += `<div style="border-radius:8px;background:rgba(0,0,0,.25);padding:10px 12px">`;
+    for (let i = 1; i <= 3; i++) {
+      const slot = sec.slots[i];
+      if (!slot) continue;
+      if (i > 1) html += `<div style="height:1px;background:var(--border);margin:8px 0"></div>`;
+      html += `<div style="display:flex;gap:8px;flex-wrap:wrap">`;
+      slot.runes.forEach(r => html += runeIcon(r, muRS.sec[i-1]===r.id, `muSelectSecRune(${i-1},${r.id})`, 32, muRS.secId));
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function muSelectPrimary(id) {
+  muRS.primId = muRS.primId===id ? null : id;
+  muRS.ksId = null; muRS.minor = [null,null,null];
+  if (muRS.secId === id) { muRS.secId = null; muRS.sec = [null,null,null]; muRS.secOrder = []; }
+  muRenderRunePicker();
+}
+function muSelectKeystone(id) { muRS.ksId = muRS.ksId===id ? null : id; muRenderRunePicker(); }
+function muSelectMinor(row, id) { muRS.minor[row] = muRS.minor[row]===id ? null : id; muRenderRunePicker(); }
+function muSelectSecPath(id) {
+  muRS.secId = muRS.secId===id ? null : id;
+  muRS.sec = [null,null,null]; muRS.secOrder = [];
+  muRenderRunePicker();
+}
+function muSelectSecRune(row, id) {
+  if (muRS.sec[row] === id) {
+    muRS.sec[row] = null;
+    muRS.secOrder = muRS.secOrder.filter(r => r !== row);
+  } else {
+    muRS.sec[row] = id;
+    if (!muRS.secOrder.includes(row)) muRS.secOrder.push(row);
+    if (muRS.secOrder.length > 2) {
+      const oldest = muRS.secOrder.shift();
+      muRS.sec[oldest] = null;
+    }
+  }
+  muRenderRunePicker();
+}
+
+function muRuneSummary() {
+  const findRune = (pathId, runeId) => {
+    const path = muRuneData?.find(p => p.id === pathId);
+    if (!path) return null;
+    for (const slot of path.slots) {
+      const r = slot.runes.find(r => r.id === runeId);
+      if (r) return r;
+    }
+    return null;
+  };
+  const primPath = muRuneData?.find(p => p.id === muRS.primId);
+  const secPath  = muRuneData?.find(p => p.id === muRS.secId);
+  const ks = muRS.ksId ? findRune(muRS.primId, muRS.ksId) : null;
+  return {
+    primaryPath: primPath?.name || '', primaryPathId: muRS.primId, primaryPathIcon: primPath?.icon || '',
+    keystone: ks?.name || '', keystoneId: muRS.ksId, keystoneIcon: ks?.icon || '',
+    minorIds: [...muRS.minor],
+    minorNames: muRS.minor.map(id => id ? findRune(muRS.primId, id)?.name : null).filter(Boolean),
+    secondaryPath: secPath?.name || '', secondaryPathId: muRS.secId, secondaryPathIcon: secPath?.icon || '',
+    secondaryIds: [...muRS.sec], secondaryOrder: [...muRS.secOrder],
+    secondaryNames: muRS.sec.filter(Boolean).map(id => findRune(muRS.secId, id)?.name).filter(Boolean),
+  };
+}
+
+function muRestoreRunes(runes) {
+  muRS = {
+    primId:   runes?.primaryPathId   || null,
+    ksId:     runes?.keystoneId      || null,
+    minor:    runes?.minorIds        || [null,null,null],
+    secId:    runes?.secondaryPathId || null,
+    sec:      runes?.secondaryIds    || [null,null,null],
+    secOrder: runes?.secondaryOrder  || [],
+  };
+}
+
+// ── Card rendering ─────────────────────────────────────────────────────────
 
 function renderMatchups(){
   const role   = document.getElementById('mu-filter-role').value;
   const author = document.getElementById('mu-filter-author').value;
   const q      = (document.getElementById('mu-search').value||'').toLowerCase();
 
-  // Populate author filter
   const authors = [...new Set(matchups.map(m=>m.author).filter(Boolean))].sort();
   const af = document.getElementById('mu-filter-author');
   const cur = af.value;
@@ -2467,10 +2632,10 @@ function renderMatchups(){
   let list = matchups.filter(m => {
     if(role   && m.role   !== role)   return false;
     if(author && m.author !== author) return false;
-    if(q && !([m.champ,m.vs,m.notes,m.keystone,m.secondary,...(Array.isArray(m.items)?m.items:[]),m.author].join(' ').toLowerCase().includes(q))) return false;
+    const txt = [m.champ,m.vs,m.notes,m.runes?.keystone,m.runes?.primaryPath,m.runes?.secondaryPath,m.keystone,m.secondary,...(Array.isArray(m.items)?m.items:[]),m.author].join(' ').toLowerCase();
+    if(q && !txt.includes(q)) return false;
     return true;
   });
-  // Most recent first
   list = [...list].reverse();
 
   const grid  = document.getElementById('matchup-grid');
@@ -2483,6 +2648,23 @@ function renderMatchups(){
     const idx = matchups.indexOf(m);
     const champImg = m.champ ? `<div style="display:flex;align-items:center;gap:6px">${champCell(m.champ)}</div>` : '<span style="color:var(--text3);font-size:12px">Any</span>';
     const vsImg    = m.vs    ? `<div style="display:flex;align-items:center;gap:6px">${champCell(m.vs)}</div>`    : '<span style="color:var(--text3);font-size:12px">?</span>';
+
+    const runeRow = (() => {
+      const r = m.runes;
+      const ksName = r?.keystone || m.keystone || '';
+      if (!ksName) return '';
+      const pathColor = r?.primaryPathId ? muPC(r.primaryPathId) : 'var(--text2)';
+      const ksIcon = r?.keystoneIcon ? `<img src="${MU_RIMG}${r.keystoneIcon}" width="22" height="22" style="border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">` : '';
+      const secName = r?.secondaryPath || m.secondary || '';
+      return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${ksIcon}<span style="font-size:12px;font-weight:700;color:${pathColor}">${esc(ksName)}</span>
+        ${secName?`<span style="font-size:11px;color:var(--text3)">+ ${esc(secName)}</span>`:''}
+      </div>`;
+    })();
+
+    const items = Array.isArray(m.items) ? m.items : (m.items ? m.items.split(',').map(s=>s.trim()).filter(Boolean) : []);
+    const itemsRow = items.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${items.map(it=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;color:var(--text2)">${muItemImg(it,15)}${esc(it)}</span>`).join('')}</div>` : '';
+
     return `<div class="panel" style="padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer" onclick="openMatchupModal(${idx})">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="display:flex;align-items:center;gap:10px">
@@ -2495,28 +2677,20 @@ function renderMatchups(){
           ${m.author?`<span class="player-tag">${esc(m.author)}</span>`:''}
         </div>
       </div>
-      ${(()=>{
-        const path = m.keystone ? RUNE_PATHS.find(p=>p.keystones.includes(m.keystone)) : null;
-        const keystoneHtml = m.keystone ? `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:${path?.color||'var(--text2)'}"><span style="width:8px;height:8px;border-radius:50%;background:${path?.color||'var(--text3)'};flex-shrink:0;display:inline-block"></span>${esc(m.keystone)}</span>` : '';
-        const secHtml = m.secondary ? `<span style="font-size:11px;color:var(--text3);font-weight:600">+ ${esc(m.secondary)}</span>` : '';
-        return (keystoneHtml||secHtml) ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${keystoneHtml}${secHtml}</div>` : '';
-      })()}
-      ${(()=>{
-        const items = Array.isArray(m.items) ? m.items : (m.items ? m.items.split(',').map(s=>s.trim()).filter(Boolean) : []);
-        return items.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px">${items.map(it=>`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;color:var(--text2)">${esc(it)}</span>`).join('')}</div>` : '';
-      })()}
+      ${runeRow}
+      ${itemsRow}
       ${m.notes?`<div style="font-size:13px;color:var(--text);line-height:1.5;border-top:1px solid var(--border);padding-top:8px">${esc(m.notes)}</div>`:''}
     </div>`;
   }).join('');
 }
 
-// Item tag-select state
+// ── Item tag-select ────────────────────────────────────────────────────────
 let muSelectedItems = [];
 
 function muRenderTags(){
   document.getElementById('mu-items-tags').innerHTML = muSelectedItems.map((item,i)=>
-    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;color:var(--text2)">
-      ${esc(item)}<button onclick="muRemoveItem(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:13px;line-height:1;margin-left:2px">×</button>
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;color:var(--text2)">
+      ${muItemImg(item,16)}${esc(item)}<button onmousedown="event.preventDefault();muRemoveItem(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:0;font-size:13px;line-height:1;margin-left:2px">×</button>
     </span>`
   ).join('');
 }
@@ -2533,7 +2707,7 @@ function muFilterItems(){
   const matches = ITEMS_LIST.filter(i=>i.toLowerCase().includes(q) && !muSelectedItems.includes(i)).slice(0,12);
   if(!matches.length){ dd.style.display='none'; return; }
   dd.innerHTML = matches.map(i=>
-    `<div onclick="muAddItem('${i.replace(/'/g,"\\'")})" style="padding:8px 12px;cursor:pointer;font-size:13px;color:var(--text)" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">${i}</div>`
+    `<div onmousedown="event.preventDefault();muAddItem('${i.replace(/'/g,"\\'")})" style="padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">${muItemImg(i,20)}${esc(i)}</div>`
   ).join('');
   dd.style.display='block';
 }
@@ -2544,7 +2718,7 @@ function muKeydown(e){
     const q = document.getElementById('mu-items-input').value.trim();
     const match = ITEMS_LIST.find(i=>i.toLowerCase()===q.toLowerCase());
     if(match) muAddItem(match);
-    else if(q){ muAddItem(q); } // allow custom item names
+    else if(q) muAddItem(q);
   }
 }
 document.addEventListener('click', e=>{
@@ -2552,55 +2726,53 @@ document.addEventListener('click', e=>{
     document.getElementById('mu-items-dropdown') && (document.getElementById('mu-items-dropdown').style.display='none');
 });
 
+// ── Modal open / save / delete ─────────────────────────────────────────────
 let editMatchupIdx = -1;
-function openMatchupModal(idx){
+async function openMatchupModal(idx){
   editMatchupIdx = (idx !== undefined) ? idx : -1;
   const m = editMatchupIdx >= 0 ? matchups[editMatchupIdx] : null;
   document.getElementById('matchup-modal-title').textContent = m ? 'Edit Matchup' : 'Add Matchup Note';
   document.getElementById('mu-delete-btn').style.display = m ? '' : 'none';
 
-  // Populate champ selects
   const co = CHAMPS.map(c=>`<option value="${c}">${c}</option>`).join('');
-  document.getElementById('mu-champ').innerHTML = `<option value="">— Any —</option>${co}`;
-  document.getElementById('mu-vs').innerHTML    = `<option value="">— Select —</option>${co}`;
-
-  // Populate keystone select grouped by path
-  document.getElementById('mu-keystone').innerHTML = `<option value="">— None —</option>` +
-    RUNE_PATHS.map(p=>`<optgroup label="${p.name}">${p.keystones.map(k=>`<option value="${k}">${k}</option>`).join('')}</optgroup>`).join('');
-
-  // Populate author select
+  document.getElementById('mu-champ').innerHTML  = `<option value="">— Any —</option>${co}`;
+  document.getElementById('mu-vs').innerHTML     = `<option value="">— Select —</option>${co}`;
   document.getElementById('mu-author').innerHTML = PLAYER_NAMES.map(p=>`<option value="${p}">${p}</option>`).join('');
 
-  // Init item tags
   muSelectedItems = m && Array.isArray(m.items) ? [...m.items] : (m && m.items ? m.items.split(',').map(s=>s.trim()).filter(Boolean) : []);
   muRenderTags();
   document.getElementById('mu-items-input').value = '';
   document.getElementById('mu-items-dropdown').style.display = 'none';
 
-  document.getElementById('mu-role').value      = m?.role      || 'top';
-  document.getElementById('mu-author').value    = m?.author    || PLAYER_NAMES[0]||'';
-  document.getElementById('mu-champ').value     = m?.champ     || '';
-  document.getElementById('mu-vs').value        = m?.vs        || '';
-  document.getElementById('mu-keystone').value  = m?.keystone  || '';
-  document.getElementById('mu-secondary').value = m?.secondary || '';
-  document.getElementById('mu-notes').value     = m?.notes     || '';
+  document.getElementById('mu-role').value   = m?.role   || 'top';
+  document.getElementById('mu-author').value = m?.author || PLAYER_NAMES[0]||'';
+  document.getElementById('mu-champ').value  = m?.champ  || '';
+  document.getElementById('mu-vs').value     = m?.vs     || '';
+  document.getElementById('mu-notes').value  = m?.notes  || '';
+
+  muRestoreRunes(m?.runes || null);
 
   document.getElementById('matchup-modal').classList.add('open');
+  document.getElementById('mu-rune-picker').innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">Loading rune data...</div>';
+
+  await muLoad();
+  muRenderRunePicker();
 }
+
 function closeMatchupModal(){ document.getElementById('matchup-modal').classList.remove('open'); editMatchupIdx=-1; }
+
 function saveMatchup(){
   const vs = document.getElementById('mu-vs').value;
   if(!vs){ alert('Please select an enemy champion.'); return; }
   const entry = {
-    role:      document.getElementById('mu-role').value,
-    author:    document.getElementById('mu-author').value,
-    champ:     document.getElementById('mu-champ').value,
+    role:   document.getElementById('mu-role').value,
+    author: document.getElementById('mu-author').value,
+    champ:  document.getElementById('mu-champ').value,
     vs,
-    keystone:  document.getElementById('mu-keystone').value,
-    secondary: document.getElementById('mu-secondary').value,
-    items:     [...muSelectedItems],
-    notes:     document.getElementById('mu-notes').value.trim(),
-    date:      new Date().toLocaleDateString('en-US'),
+    runes:  muRuneSummary(),
+    items:  [...muSelectedItems],
+    notes:  document.getElementById('mu-notes').value.trim(),
+    date:   new Date().toLocaleDateString('en-US'),
   };
   if(editMatchupIdx >= 0) matchups[editMatchupIdx] = entry;
   else matchups.push(entry);
@@ -2609,6 +2781,7 @@ function saveMatchup(){
   renderMatchups();
   toast('✓ Matchup saved!');
 }
+
 function deleteMatchup(){
   if(editMatchupIdx < 0) return;
   if(!confirm('Delete this matchup note?')) return;
