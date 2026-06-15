@@ -2621,6 +2621,7 @@ function muRestoreRunes(runes) {
 // ── Card rendering ─────────────────────────────────────────────────────────
 
 function renderMatchups(){
+  if(!muItemMap){ muLoad().then(()=>renderMatchups()); return; }
   const role   = document.getElementById('mu-filter-role').value;
   const author = document.getElementById('mu-filter-author').value;
   const q      = (document.getElementById('mu-search').value||'').toLowerCase();
