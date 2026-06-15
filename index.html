@@ -2603,6 +2603,7 @@ function muRuneSummary() {
     secondaryPath: secPath?.name || '', secondaryPathId: muRS.secId, secondaryPathIcon: secPath?.icon || '',
     secondaryIds: [...muRS.sec], secondaryOrder: [...muRS.secOrder],
     secondaryNames: muRS.sec.filter(Boolean).map(id => findRune(muRS.secId, id)?.name).filter(Boolean),
+    secondaryIcons: muRS.sec.filter(Boolean).map(id => findRune(muRS.secId, id)?.icon).filter(Boolean),
   };
 }
 
@@ -2657,10 +2658,13 @@ function renderMatchups(){
       const ksIcon = r?.keystoneIcon ? `<img src="${MU_RIMG}${r.keystoneIcon}" width="22" height="22" style="border-radius:50%;flex-shrink:0" onerror="this.style.display='none'">` : '';
       const secName = r?.secondaryPath || m.secondary || '';
       const secRunes = r?.secondaryNames || [];
-      const secDetail = secRunes.length ? secRunes.map(n=>esc(n)).join(', ') : secName;
+      const secIcons = r?.secondaryIcons || [];
+      const secDetail = secRunes.length
+        ? secRunes.map((n,i) => `${secIcons[i]?`<img src="${MU_RIMG}${secIcons[i]}" width="16" height="16" style="border-radius:50%;vertical-align:middle;margin-right:2px" onerror="this.style.display='none'">`:''}${esc(n)}`).join('<span style="color:var(--border)"> · </span>')
+        : secName ? esc(secName) : '';
       return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         ${ksIcon}<span style="font-size:12px;font-weight:700;color:${pathColor}">${esc(ksName)}</span>
-        ${secDetail?`<span style="font-size:11px;color:var(--text3)">+ ${secDetail}</span>`:''}
+        ${secDetail?`<span style="font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:3px">+ ${secDetail}</span>`:''}
       </div>`;
     })();
 
