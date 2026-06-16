@@ -852,17 +852,37 @@ function pickCell(champ, player, kda){
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ─── ENGINE ──────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'adl_s2026_results';
 let results = {};
 let adminMode = false;
 let currentResultMatch = null;
 let scheduleFilter = 'all';
 
-function loadResults() {
-  try { results = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { results = {}; }
+// ─── SHARED DATA (Supabase, synced across everyone who visits the page) ──────
+async function loadAdlData() {
+  try {
+    const res = await fetch('/api/getAdlData');
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+    const data = await res.json();
+    results = data.results || {};
+    matchNotes = data.matchNotes || {};
+  } catch (e) {
+    console.warn('Failed to load ADL data from server, starting empty.', e);
+    results = {};
+    matchNotes = {};
+  }
 }
-function saveResults() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
+async function saveAdlData() {
+  try {
+    const res = await fetch('/api/saveAdlData', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results, matchNotes }),
+    });
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
+  } catch (e) {
+    showToast('Save failed — check your connection and try again', 'warn');
+    console.error('Failed to save ADL data', e);
+  }
 }
 
 // Compute standings for a group
@@ -1315,10 +1335,10 @@ function selectScore(side, blueGames, redGames) {
   const id = SCORE_BTN_IDS[`${blueGames}-${redGames}`];
   document.getElementById(id).className = 'winner-btn '+(side==='blue'?'sel-blue':'sel-red');
 }
-function submitResult() {
+async function submitResult() {
   if (!selectedWinner || !selectedScore) { showToast('Select a series score first','warn'); return; }
   results[currentResultMatch]={ winner:selectedWinner, blueGames:selectedScore.blueGames, redGames:selectedScore.redGames, ts:Date.now() };
-  saveResults();
+  await saveAdlData();
   document.getElementById('resultSuccess').style.display='block';
   setTimeout(()=>{
     closeResultOverlay();
@@ -1326,22 +1346,19 @@ function submitResult() {
     showToast('Result saved!');
   },600);
 }
-function clearResult() {
+async function clearResult() {
   delete results[currentResultMatch];
-  saveResults();
+  await saveAdlData();
   closeResultOverlay();
   renderSchedule(); renderAllStandings(); renderDashboard(); renderTeams(document.querySelector('#teams .filt.active')?.dataset?.g||'all'); renderMatches();
   showToast('Result cleared','warn');
 }
 
 // ─── OUR MATCHES (SJS match notes) ────────────────────────────────────────────
-const MN_KEY = 'adl_sjs_matchnotes';
 const MN_ROLES = ['Top','Jungle','Middle','Bottom','Support'];
 let matchNotes = {};
 let currentMatchNoteId = null;
 
-function loadMatchNotes() { try { matchNotes = JSON.parse(localStorage.getItem(MN_KEY) || '{}'); } catch(e) { matchNotes = {}; } }
-function saveMatchNotesStore() { localStorage.setItem(MN_KEY, JSON.stringify(matchNotes)); }
 
 function findSjsMatches() {
   const out = [];
@@ -1490,7 +1507,7 @@ function commitMnGameFields() {
 
 function closeMatchNoteOverlay() { document.getElementById('matchNoteOverlay').classList.remove('open'); currentMatchNoteId = null; }
 
-function saveMatchNote() {
+async function saveMatchNote() {
   if (!currentMatchNoteId) return;
   commitMnGameFields();
   const current = matchNotes[currentMatchNoteId];
@@ -1500,15 +1517,15 @@ function saveMatchNote() {
     notes: document.getElementById('mnNotes').value.trim(),
     ts: Date.now(),
   };
-  saveMatchNotesStore();
+  await saveAdlData();
   closeMatchNoteOverlay();
   renderMatches();
   showToast('Match notes saved!');
 }
-function deleteMatchNote() {
+async function deleteMatchNote() {
   if (!currentMatchNoteId) return;
   delete matchNotes[currentMatchNoteId];
-  saveMatchNotesStore();
+  await saveAdlData();
   closeMatchNoteOverlay();
   renderMatches();
   showToast('Match notes deleted', 'warn');
@@ -1547,7 +1564,7 @@ function mnShowImportFeedback(type, msg) {
   fb.innerHTML = msg;
 }
 
-function confirmMnImport() {
+async function confirmMnImport() {
   if (!mnImportMatchId) return;
   const raw = document.getElementById('mn-import-textarea').value.trim();
   if (!raw) { mnShowImportFeedback('error', 'Please paste JSON or upload a file.'); return; }
@@ -1579,7 +1596,7 @@ function confirmMnImport() {
     notes: existing.notes || '',
     ts: Date.now(),
   };
-  saveMatchNotesStore();
+  await saveAdlData();
   closeMnImportOverlay();
   renderMatches();
   showToast(`Imported ${games.length} game${games.length>1?'s':''}!`);
@@ -1609,15 +1626,17 @@ function showToast(msg, type='win') {
 }
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
-loadResults();
-loadMatchNotes();
-renderDashboard();
-renderAllStandings();
-renderSchedule();
-renderTeams();
-renderTimeline();
-renderMatches();
-document.getElementById('seasonBadge').textContent = SEASON.name;
+async function boot() {
+  await loadAdlData();
+  renderDashboard();
+  renderAllStandings();
+  renderSchedule();
+  renderTeams();
+  renderTimeline();
+  renderMatches();
+  document.getElementById('seasonBadge').textContent = SEASON.name;
+}
+boot();
 </script>
 </body>
 </html>
