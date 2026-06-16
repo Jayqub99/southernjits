@@ -348,6 +348,33 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- ════════ MATCH NOTE IMPORT OVERLAY ════════ -->
+<div class="admin-overlay" id="mnImportOverlay">
+  <div class="admin-modal" style="max-width:560px;max-height:88vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeMnImportOverlay()">✕</button>
+    <div class="modal-title">Import Game JSON</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Paste the JSON exported from the capture script, or upload the <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">.json</code> file. Champion picks and player names will fill in automatically. If the file has multiple games, the first one is used.
+    </p>
+    <div style="margin-bottom:14px">
+      <div class="field-label">Upload File</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 16px;cursor:pointer;font-family:var(--font-u);font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;display:inline-block">
+          &#x1F4C2; Choose File
+          <input type="file" accept=".json,application/json" id="mn-import-file" style="display:none" onchange="handleMnImportFile(this)">
+        </label>
+        <span id="mn-import-filename" style="font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">No file selected</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Or Paste JSON</label>
+      <textarea id="mn-import-textarea" rows="8" style="font-family:monospace;font-size:11px;line-height:1.5" placeholder="Paste JSON here..."></textarea>
+    </div>
+    <div id="mn-import-feedback" style="display:none;font-size:12px;padding:10px 14px;border-radius:6px;margin-bottom:14px;line-height:1.5"></div>
+    <button class="btn-primary" onclick="confirmMnImport()">Import</button>
+  </div>
+</div>
+
 <!-- ════════ HEADER ════════ -->
 <div class="admin-bar" id="adminBar">
   <span>🛡 Admin Mode — You can report match results</span>
@@ -1298,7 +1325,7 @@ function renderMatches() {
     const sjsWon = r && ((r.winner==='blue') === isBlue);
     const resultTag = r ? `<span class="result-tag" style="background:${sjsWon?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${sjsWon?'var(--win)':'var(--loss)'};border:1px solid ${sjsWon?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${sjsWon?'WIN':'LOSS'}</span>` : '';
     const note = matchNotes[m.id];
-    const adminBtn = adminMode ? `<button class="btn-sm btn-draft" onclick="openMatchNoteOverlay('${m.id}')">${note?'Edit Notes':'+ Add Notes'}</button>` : '';
+    const adminBtn = adminMode ? `<button class="btn-sm btn-draft" onclick="openMatchNoteOverlay('${m.id}')">${note?'Edit Notes':'+ Add Notes'}</button><button class="btn-sm btn-tcode" onclick="openMnImportOverlay('${m.id}')">&#x1F4C2; Import JSON</button>` : '';
     const picksHtml = note ? `
       <div class="picks-row">
         <div class="picks-col">
@@ -1380,6 +1407,71 @@ function deleteMatchNote() {
   closeMatchNoteOverlay();
   renderMatches();
   showToast('Match notes deleted', 'warn');
+}
+
+// ─── MATCH NOTE JSON IMPORT (from sjs_capture.py output) ──────────────────────
+let mnImportMatchId = null;
+const MN_ROLE_KEY = { top:'Top', jng:'Jungle', mid:'Middle', adc:'Bottom', sup:'Support' };
+
+function openMnImportOverlay(matchId) {
+  mnImportMatchId = matchId;
+  document.getElementById('mn-import-textarea').value = '';
+  document.getElementById('mn-import-filename').textContent = 'No file selected';
+  document.getElementById('mn-import-file').value = '';
+  document.getElementById('mn-import-feedback').style.display = 'none';
+  document.getElementById('mnImportOverlay').classList.add('open');
+}
+function closeMnImportOverlay() { document.getElementById('mnImportOverlay').classList.remove('open'); mnImportMatchId = null; }
+
+function handleMnImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('mn-import-filename').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('mn-import-textarea').value = e.target.result; };
+  reader.readAsText(file);
+}
+
+function mnShowImportFeedback(type, msg) {
+  const fb = document.getElementById('mn-import-feedback');
+  const styles = {
+    ok:    'background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:var(--win)',
+    error: 'background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--loss)',
+  };
+  fb.style.cssText = styles[type] + ';display:block;font-size:12px;padding:10px 14px;border-radius:6px;margin-bottom:14px;line-height:1.5';
+  fb.innerHTML = msg;
+}
+
+function confirmMnImport() {
+  if (!mnImportMatchId) return;
+  const raw = document.getElementById('mn-import-textarea').value.trim();
+  if (!raw) { mnShowImportFeedback('error', 'Please paste JSON or upload a file.'); return; }
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch(e) { mnShowImportFeedback('error', 'Invalid JSON: ' + e.message); return; }
+
+  const games = Array.isArray(data) ? data : [data];
+  if (!games.length) { mnShowImportFeedback('error', 'No game records found in this file.'); return; }
+  const g = games[0];
+
+  const sjsPicks = {}, oppPicks = {};
+  Object.entries(MN_ROLE_KEY).forEach(([key, role]) => {
+    sjsPicks[role] = g[key] || '';
+    oppPicks[role] = g['e'+key] || '';
+  });
+
+  const existing = matchNotes[mnImportMatchId] || {};
+  matchNotes[mnImportMatchId] = {
+    sjsPicks, oppPicks,
+    vod: existing.vod || '',
+    notes: existing.notes || g.notes || '',
+    ts: Date.now(),
+  };
+  saveMatchNotesStore();
+  closeMnImportOverlay();
+  renderMatches();
+  showToast(`Imported picks${games.length>1?` (game 1 of ${games.length} found)`:''}!`);
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
