@@ -306,10 +306,12 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
     <div class="modal-title" id="resultTitle">Report Result</div>
     <div id="resultMatchInfo" style="margin-bottom:18px;padding:14px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2);line-height:1.6"></div>
     <div class="field-group">
-      <label class="field-label">Winner</label>
+      <label class="field-label">Series Score (Best of 3)</label>
       <div class="winner-btns">
-        <button class="winner-btn" id="winBtnBlue" onclick="selectWinner('blue')">🔵 Blue Side Wins</button>
-        <button class="winner-btn" id="winBtnRed" onclick="selectWinner('red')">🔴 Red Side Wins</button>
+        <button class="winner-btn" id="scoreBtn20" onclick="selectScore('blue',2,0)">🔵 2 – 0</button>
+        <button class="winner-btn" id="scoreBtn21" onclick="selectScore('blue',2,1)">🔵 2 – 1</button>
+        <button class="winner-btn" id="scoreBtn12" onclick="selectScore('red',1,2)">🔴 1 – 2</button>
+        <button class="winner-btn" id="scoreBtn02" onclick="selectScore('red',0,2)">🔴 0 – 2</button>
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:6px">
@@ -494,7 +496,7 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
         <div>Playoffs: <strong style="color:var(--text)">Monday 7pm ET</strong></div>
         <div>Rank Cap: <strong style="color:var(--text)">Master 100LP</strong></div>
         <div>Entry: <strong style="color:var(--text)">$100 + $50 deposit</strong></div>
-        <div>Format: <strong style="color:var(--text)">Best of 1 (group stage)</strong></div>
+        <div>Format: <strong style="color:var(--text)">Best of 3 (group stage)</strong></div>
         <div>Admin: <strong style="color:var(--text)">watercat</strong></div>
       </div>
     </div>
@@ -874,11 +876,14 @@ function calcStandings(group) {
       const blueInGroup = stats[m.blue];
       const redInGroup  = stats[m.red];
       if (!blueInGroup || !redInGroup) return;
-      if (r.winner === 'blue') {
-        blueInGroup.mw++; blueInGroup.gw++; redInGroup.ml++; redInGroup.gl++;
-      } else {
-        redInGroup.mw++; redInGroup.gw++; blueInGroup.ml++; blueInGroup.gl++;
-      }
+      // blueGames/redGames hold the Bo3 series score; fall back to a 1-0 split
+      // for older records saved before series scoring was added.
+      const blueGames = r.blueGames ?? (r.winner==='blue' ? 1 : 0);
+      const redGames  = r.redGames  ?? (r.winner==='red'  ? 1 : 0);
+      blueInGroup.gw += blueGames; blueInGroup.gl += redGames;
+      redInGroup.gw  += redGames;  redInGroup.gl  += blueGames;
+      if (r.winner === 'blue') { blueInGroup.mw++; redInGroup.ml++; }
+      else                     { redInGroup.mw++;  blueInGroup.ml++; }
     });
   });
   return Object.values(stats).sort((a,b) => {
@@ -1005,14 +1010,16 @@ function renderMatchCard(m, week, group, r, isTBD) {
   const redClick  = (!isTBD && m.red  && TEAMS[m.red])  ? `event.stopPropagation();showPage('teams',document.querySelector('.nav-btn[data-page=teams]'));setTimeout(()=>openTeamModal('${m.red}'),50)`  : '';
   const blueEl = blueClick ? `<span class="team-nm team-nm-link" onclick="${blueClick}">${blueNm}</span>` : `<div class="team-nm">${blueNm}</div>`;
   const redEl  = redClick  ? `<span class="team-nm team-nm-link" onclick="${redClick}">${redNm}</span>`   : `<div class="team-nm">${redNm}</div>`;
+  const bg = r ? (r.blueGames ?? (blueWon?1:0)) : 0;
+  const rg = r ? (r.redGames  ?? (redWon?1:0))  : 0;
   const centerHtml = r
-    ? `<div class="match-result ${blueWon?'result-blue':'result-red'}">${blueWon?'B':'R'}</div><div class="match-meta">${blueWon?'Blue':'Red'} Wins</div>`
+    ? `<div class="match-result ${blueWon?'result-blue':'result-red'}">${bg}–${rg}</div><div class="match-meta">${blueWon?'Blue':'Red'} Wins</div>`
     : `<div class="vs-txt">VS</div>`;
   const footerLinks = isTBD ? '' : `
     ${m.draft?`<a href="https://drafter.lol/draft/${m.draft}" target="_blank" class="btn-sm btn-draft">Draft</a>`:''}
     ${m.tcode?`<button class="btn-sm btn-tcode" onclick="event.stopPropagation();copyCode('${m.tcode}','${m.id}')">tCode</button>`:''}
   `;
-  const resultTag = r ? `<span class="result-tag ${blueWon?'bw':'rw'}">${blueWon?'BLUE WINS':'RED WINS'}</span>` : '';
+  const resultTag = r ? `<span class="result-tag ${blueWon?'bw':'rw'}">${blueWon?'BLUE':'RED'} WINS ${bg}–${rg}</span>` : '';
   const reportBtn = (adminMode && !isTBD)
     ? `<button class="btn-sm btn-report" onclick="event.stopPropagation();openResult('${m.id}')">Report</button>`
     : '';
@@ -1188,9 +1195,12 @@ function renderDashboard() {
       const r=results[m.id];
       const winner = r.winner==='blue' ? TEAMS[m.blue]?.name : TEAMS[m.red]?.name;
       const loser  = r.winner==='blue' ? TEAMS[m.red]?.name  : TEAMS[m.blue]?.name;
+      const bg = r.blueGames ?? (r.winner==='blue'?1:0);
+      const rg = r.redGames  ?? (r.winner==='red'?1:0);
+      const score = r.winner==='blue' ? `${bg}-${rg}` : `${rg}-${bg}`;
       return `<div class="recent-match">
         <div class="recent-teams"><span class="recent-winner">${winner}</span><span class="recent-vs">def.</span>${loser}</div>
-        <span class="result-tag ${r.winner==='blue'?'bw':'rw'}">${r.winner==='blue'?'BLUE':'RED'}</span>
+        <span class="result-tag ${r.winner==='blue'?'bw':'rw'}">${score}</span>
       </div>`;
     }).join('');
   }
@@ -1265,9 +1275,13 @@ function adminLogout() {
 
 // ─── RESULT ENTRY ─────────────────────────────────────────────────────────────
 let selectedWinner = null;
+let selectedScore = null; // { blueGames, redGames }
+const SCORE_BTN_IDS = { '2-0':'scoreBtn20', '2-1':'scoreBtn21', '1-2':'scoreBtn12', '0-2':'scoreBtn02' };
+
 function openResult(matchId) {
   currentResultMatch = matchId;
   selectedWinner = null;
+  selectedScore = null;
   // find match
   let found;
   SCHEDULE.forEach(w=>w.matches.forEach(m=>{if(m.id===matchId)found=m;}));
@@ -1279,21 +1293,30 @@ function openResult(matchId) {
      Match ID: <span style="font-family:monospace;font-size:12px;color:var(--text3)">${matchId}</span>`;
   const clrBtn = document.getElementById('clearResultBtn');
   clrBtn.style.display = r ? 'block':'none';
-  document.getElementById('winBtnBlue').className='winner-btn'+(r?.winner==='blue'?' sel-blue':'');
-  document.getElementById('winBtnRed').className='winner-btn'+(r?.winner==='red'?' sel-red':'');
-  if (r) selectedWinner = r.winner;
+  Object.values(SCORE_BTN_IDS).forEach(id=>document.getElementById(id).className='winner-btn');
+  if (r) {
+    selectedWinner = r.winner;
+    const bg = r.blueGames ?? (r.winner==='blue'?1:0);
+    const rg = r.redGames  ?? (r.winner==='red'?1:0);
+    selectedScore = { blueGames:bg, redGames:rg };
+    const key = `${bg}-${rg}`;
+    const id = SCORE_BTN_IDS[key];
+    if (id) document.getElementById(id).className = 'winner-btn '+(r.winner==='blue'?'sel-blue':'sel-red');
+  }
   document.getElementById('resultSuccess').style.display='none';
   document.getElementById('resultOverlay').classList.add('open');
 }
 function closeResultOverlay() { document.getElementById('resultOverlay').classList.remove('open'); currentResultMatch=null; }
-function selectWinner(side) {
-  selectedWinner=side;
-  document.getElementById('winBtnBlue').className='winner-btn'+(side==='blue'?' sel-blue':'');
-  document.getElementById('winBtnRed').className='winner-btn'+(side==='red'?' sel-red':'');
+function selectScore(side, blueGames, redGames) {
+  selectedWinner = side;
+  selectedScore = { blueGames, redGames };
+  Object.values(SCORE_BTN_IDS).forEach(id=>document.getElementById(id).className='winner-btn');
+  const id = SCORE_BTN_IDS[`${blueGames}-${redGames}`];
+  document.getElementById(id).className = 'winner-btn '+(side==='blue'?'sel-blue':'sel-red');
 }
 function submitResult() {
-  if (!selectedWinner) { showToast('Select a winner first','warn'); return; }
-  results[currentResultMatch]={ winner:selectedWinner, ts:Date.now() };
+  if (!selectedWinner || !selectedScore) { showToast('Select a series score first','warn'); return; }
+  results[currentResultMatch]={ winner:selectedWinner, blueGames:selectedScore.blueGames, redGames:selectedScore.redGames, ts:Date.now() };
   saveResults();
   document.getElementById('resultSuccess').style.display='block';
   setTimeout(()=>{
@@ -1363,7 +1386,9 @@ function renderMatches() {
     const oppName = matchTeamName(oppId);
     const r = results[m.id];
     const sjsWon = r && ((r.winner==='blue') === isBlue);
-    const resultTag = r ? `<span class="result-tag" style="background:${sjsWon?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${sjsWon?'var(--win)':'var(--loss)'};border:1px solid ${sjsWon?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${sjsWon?'WIN':'LOSS'}</span>` : '';
+    const sjsGames = r ? (isBlue ? (r.blueGames ?? (sjsWon?1:0)) : (r.redGames ?? (sjsWon?1:0))) : 0;
+    const oppGames = r ? (isBlue ? (r.redGames  ?? (sjsWon?0:1)) : (r.blueGames ?? (sjsWon?0:1))) : 0;
+    const resultTag = r ? `<span class="result-tag" style="background:${sjsWon?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${sjsWon?'var(--win)':'var(--loss)'};border:1px solid ${sjsWon?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${sjsWon?'WIN':'LOSS'} ${sjsGames}-${oppGames}</span>` : '';
     const note = matchNotes[m.id];
     const games = noteGames(note);
     const adminBtn = adminMode ? `<button class="btn-sm btn-draft" onclick="openMatchNoteOverlay('${m.id}')">${note?'Edit Notes':'+ Add Notes'}</button><button class="btn-sm btn-tcode" onclick="openMnImportOverlay('${m.id}')">&#x1F4C2; Import JSON</button>` : '';
