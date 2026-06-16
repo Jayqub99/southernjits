@@ -247,6 +247,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .champ-cell{display:flex;align-items:center;gap:8px}
 .champ-icon{width:28px;height:28px;border-radius:5px;object-fit:cover;border:1px solid var(--border);background:var(--bg3);flex-shrink:0}
 .champ-name{font-size:12px;color:var(--text2)}
+.player-tag{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.04em}
+.kda-tag{font-size:10px;color:var(--text3)}
 .match-note-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:12px}
 .match-note-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .picks-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
@@ -831,6 +833,19 @@ const ICON_MAP = {"Bel'Veth":"Belveth","Cho'Gath":"Chogath","Dr. Mundo":"DrMundo
 const CHAMP_DDV = "16.9.1";
 function champIconUrl(n){const k=ICON_MAP[n]||n.replace(/[^a-zA-Z]/g,'');return`https://ddragon.leagueoflegends.com/cdn/${CHAMP_DDV}/img/champion/${k}.png`;}
 function champCell(n){if(!n)return'<span style="color:var(--text3);font-size:12px">—</span>';return`<div class="champ-cell"><img class="champ-icon" src="${champIconUrl(n)}" alt="${n}" onerror="this.style.display='none'"><span class="champ-name">${n}</span></div>`;}
+function pickCell(champ, player, kda){
+  if(!champ) return '<span style="color:var(--text3);font-size:12px">—</span>';
+  return `<div class="champ-cell">
+    <img class="champ-icon" src="${champIconUrl(champ)}" alt="${champ}" onerror="this.style.display='none'">
+    <div style="display:flex;flex-direction:column;gap:1px">
+      <span class="champ-name">${esc(champ)}</span>
+      <span style="display:flex;gap:6px;align-items:center">
+        ${player?`<span class="player-tag">${esc(player)}</span>`:''}
+        ${kda?`<span class="kda-tag">${esc(kda)}</span>`:''}
+      </span>
+    </div>
+  </div>`;
+}
 function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ─── ENGINE ──────────────────────────────────────────────────────────────────
@@ -1313,6 +1328,31 @@ function findSjsMatches() {
   return out;
 }
 
+function noteGames(note) {
+  if (!note) return [];
+  if (note.games && note.games.length) return note.games;
+  if (note.sjsPicks) return [{ sjsPicks: note.sjsPicks, oppPicks: note.oppPicks, sjsPlayers:{}, oppPlayers:{}, sjsKda:{}, oppKda:{} }];
+  return [];
+}
+
+function renderGameBlock(game, oppName, idx, total) {
+  const resultTag = game.result ? `<span class="result-tag" style="background:${game.result==='Win'?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${game.result==='Win'?'var(--win)':'var(--loss)'};border:1px solid ${game.result==='Win'?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${esc(game.result.toUpperCase())}</span>` : '';
+  return `<div style="${idx>0?'border-top:1px solid var(--border);padding-top:14px;margin-top:14px':''}">
+    ${total>1?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-family:var(--font-d);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)">Game ${idx+1}</span>${resultTag}</div>`:''}
+    <div class="picks-row">
+      <div class="picks-col">
+        <div class="picks-col-label" style="color:var(--accent)">Southern Jits</div>
+        <div class="picks-list">${MN_ROLES.map(role=>pickCell(game.sjsPicks?.[role], game.sjsPlayers?.[role], game.sjsKda?.[role])).join('')}</div>
+      </div>
+      <div class="picks-col">
+        <div class="picks-col-label">${esc(oppName)}</div>
+        <div class="picks-list">${MN_ROLES.map(role=>pickCell(game.oppPicks?.[role], game.oppPlayers?.[role], game.oppKda?.[role])).join('')}</div>
+      </div>
+    </div>
+    ${game.notes?`<div style="font-size:12px;color:var(--text3);margin-top:6px">${esc(game.notes)}</div>`:''}
+  </div>`;
+}
+
 function renderMatches() {
   const c = document.getElementById('matchesContainer');
   const matches = findSjsMatches();
@@ -1325,20 +1365,12 @@ function renderMatches() {
     const sjsWon = r && ((r.winner==='blue') === isBlue);
     const resultTag = r ? `<span class="result-tag" style="background:${sjsWon?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${sjsWon?'var(--win)':'var(--loss)'};border:1px solid ${sjsWon?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${sjsWon?'WIN':'LOSS'}</span>` : '';
     const note = matchNotes[m.id];
+    const games = noteGames(note);
     const adminBtn = adminMode ? `<button class="btn-sm btn-draft" onclick="openMatchNoteOverlay('${m.id}')">${note?'Edit Notes':'+ Add Notes'}</button><button class="btn-sm btn-tcode" onclick="openMnImportOverlay('${m.id}')">&#x1F4C2; Import JSON</button>` : '';
-    const picksHtml = note ? `
-      <div class="picks-row">
-        <div class="picks-col">
-          <div class="picks-col-label" style="color:var(--accent)">Southern Jits</div>
-          <div class="picks-list">${MN_ROLES.map(role=>champCell(note.sjsPicks?.[role])).join('')}</div>
-        </div>
-        <div class="picks-col">
-          <div class="picks-col-label">${esc(oppName)}</div>
-          <div class="picks-list">${MN_ROLES.map(role=>champCell(note.oppPicks?.[role])).join('')}</div>
-        </div>
-      </div>
-      ${note.vod?`<a href="${note.vod}" target="_blank" class="btn-sm btn-draft" style="display:inline-block;margin-bottom:8px">▶ Watch VOD</a>`:''}
-      ${note.notes?`<div style="font-size:13px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:6px">${esc(note.notes)}</div>`:''}
+    const picksHtml = games.length ? `
+      ${games.map((g,i)=>renderGameBlock(g, oppName, i, games.length)).join('')}
+      ${note.vod?`<a href="${note.vod}" target="_blank" class="btn-sm btn-draft" style="display:inline-block;margin-top:12px">▶ Watch VOD</a>`:''}
+      ${note.notes?`<div style="font-size:13px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:10px">${esc(note.notes)}</div>`:''}
     ` : '<div style="color:var(--text3);font-size:12px">No notes logged yet.</div>';
     return `<div class="match-note-card">
       <div class="match-note-head">
@@ -1368,15 +1400,16 @@ function openMatchNoteOverlay(matchId) {
   const isBlue = found.blue==='SJS';
   const oppId = isBlue ? found.red : found.blue;
   document.getElementById('matchNoteTitle').textContent = `Match Notes — vs ${matchTeamName(oppId)} (${weekLabel})`;
-  const note = matchNotes[matchId] || { sjsPicks:{}, oppPicks:{}, vod:'', notes:'' };
+  const note = matchNotes[matchId];
+  const g0 = noteGames(note)[0] || { sjsPicks:{}, oppPicks:{} };
   document.getElementById('mnSjsPicks').innerHTML = MN_ROLES.map(role=>roleSelectRow(role,'sjs')).join('');
   document.getElementById('mnOppPicks').innerHTML = MN_ROLES.map(role=>roleSelectRow(role,'opp')).join('');
   MN_ROLES.forEach(role => {
-    document.getElementById(`mn-sjs-${role}`).value = note.sjsPicks?.[role] || '';
-    document.getElementById(`mn-opp-${role}`).value = note.oppPicks?.[role] || '';
+    document.getElementById(`mn-sjs-${role}`).value = g0.sjsPicks?.[role] || '';
+    document.getElementById(`mn-opp-${role}`).value = g0.oppPicks?.[role] || '';
   });
-  document.getElementById('mnVod').value = note.vod || '';
-  document.getElementById('mnNotes').value = note.notes || '';
+  document.getElementById('mnVod').value = note?.vod || '';
+  document.getElementById('mnNotes').value = note?.notes || '';
   document.getElementById('mnDeleteBtn').style.display = matchNotes[matchId] ? 'block' : 'none';
   document.getElementById('matchNoteOverlay').classList.add('open');
 }
@@ -1390,7 +1423,7 @@ function saveMatchNote() {
     oppPicks[role] = document.getElementById(`mn-opp-${role}`).value;
   });
   matchNotes[currentMatchNoteId] = {
-    sjsPicks, oppPicks,
+    games: [{ sjsPicks, oppPicks, sjsPlayers:{}, oppPlayers:{}, sjsKda:{}, oppKda:{} }],
     vod: document.getElementById('mnVod').value.trim(),
     notes: document.getElementById('mnNotes').value.trim(),
     ts: Date.now(),
@@ -1451,27 +1484,32 @@ function confirmMnImport() {
   try { data = JSON.parse(raw); }
   catch(e) { mnShowImportFeedback('error', 'Invalid JSON: ' + e.message); return; }
 
-  const games = Array.isArray(data) ? data : [data];
-  if (!games.length) { mnShowImportFeedback('error', 'No game records found in this file.'); return; }
-  const g = games[0];
+  const rawGames = Array.isArray(data) ? data : [data];
+  if (!rawGames.length) { mnShowImportFeedback('error', 'No game records found in this file.'); return; }
 
-  const sjsPicks = {}, oppPicks = {};
-  Object.entries(MN_ROLE_KEY).forEach(([key, role]) => {
-    sjsPicks[role] = g[key] || '';
-    oppPicks[role] = g['e'+key] || '';
+  const games = rawGames.map(g => {
+    const sjsPicks={}, oppPicks={}, sjsPlayers={}, oppPlayers={}, sjsKda={}, oppKda={};
+    Object.entries(MN_ROLE_KEY).forEach(([key, role]) => {
+      sjsPicks[role]   = g[key] || '';
+      oppPicks[role]   = g['e'+key] || '';
+      sjsPlayers[role] = g.players?.[key] || '';
+      oppPlayers[role] = g.eplayers?.[key] || '';
+      sjsKda[role]     = g.kda?.[key] || '';
+    });
+    return { sjsPicks, oppPicks, sjsPlayers, oppPlayers, sjsKda, oppKda, result: g.result || '', notes: g.notes || '' };
   });
 
   const existing = matchNotes[mnImportMatchId] || {};
   matchNotes[mnImportMatchId] = {
-    sjsPicks, oppPicks,
+    games,
     vod: existing.vod || '',
-    notes: existing.notes || g.notes || '',
+    notes: existing.notes || '',
     ts: Date.now(),
   };
   saveMatchNotesStore();
   closeMnImportOverlay();
   renderMatches();
-  showToast(`Imported picks${games.length>1?` (game 1 of ${games.length} found)`:''}!`);
+  showToast(`Imported ${games.length} game${games.length>1?'s':''}!`);
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
