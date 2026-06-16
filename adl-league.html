@@ -327,6 +327,7 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
   <div class="admin-modal" style="max-width:640px;max-height:88vh;overflow-y:auto">
     <button class="modal-close" onclick="closeMatchNoteOverlay()">✕</button>
     <div class="modal-title" id="matchNoteTitle">Match Notes</div>
+    <div id="mnGameTabs" style="display:none;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px">
       <div style="flex:1;min-width:240px">
         <div class="field-label" style="color:var(--accent)">Southern Jits Picks</div>
@@ -1413,12 +1414,16 @@ function renderMatches() {
 function roleSelectRow(role, side) {
   return `<div style="display:flex;align-items:center;gap:8px">
     <span class="role-badge role-${role}" style="width:62px;text-align:center;flex-shrink:0">${role}</span>
-    <select id="mn-${side}-${role}" style="flex:1"><option value="">— Select —</option>${CHAMPS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+    <select id="mn-${side}-${role}" style="flex:1.4"><option value="">— Select —</option>${CHAMPS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+    <input type="text" id="mn-${side}-kda-${role}" placeholder="K/D/A" style="flex:0.7;padding:10px 10px;font-size:13px;font-weight:600">
   </div>`;
 }
 
-function openMatchNoteOverlay(matchId) {
+let currentMnGameIdx = 0;
+
+function openMatchNoteOverlay(matchId, gameIdx) {
   currentMatchNoteId = matchId;
+  currentMnGameIdx = gameIdx || 0;
   let found, weekLabel;
   SCHEDULE.forEach(wk => wk.matches.forEach(m => { if (m.id===matchId) { found=m; weekLabel=wk.label; } }));
   if (!found) return;
@@ -1426,29 +1431,71 @@ function openMatchNoteOverlay(matchId) {
   const oppId = isBlue ? found.red : found.blue;
   document.getElementById('matchNoteTitle').textContent = `Match Notes — vs ${matchTeamName(oppId)} (${weekLabel})`;
   const note = matchNotes[matchId];
-  const g0 = noteGames(note)[0] || { sjsPicks:{}, oppPicks:{} };
+  const games = noteGames(note);
+
+  const tabs = document.getElementById('mnGameTabs');
+  if (games.length > 1) {
+    tabs.style.display = 'flex';
+    tabs.innerHTML = games.map((g,i)=>`<button class="btn-sm ${i===currentMnGameIdx?'btn-report':'btn-tcode'}" onclick="event.preventDefault();switchMnGame(${i})">Game ${i+1}</button>`).join('');
+  } else {
+    tabs.style.display = 'none';
+    tabs.innerHTML = '';
+  }
+
   document.getElementById('mnSjsPicks').innerHTML = MN_ROLES.map(role=>roleSelectRow(role,'sjs')).join('');
   document.getElementById('mnOppPicks').innerHTML = MN_ROLES.map(role=>roleSelectRow(role,'opp')).join('');
-  MN_ROLES.forEach(role => {
-    document.getElementById(`mn-sjs-${role}`).value = g0.sjsPicks?.[role] || '';
-    document.getElementById(`mn-opp-${role}`).value = g0.oppPicks?.[role] || '';
-  });
+  fillMnGameFields(games[currentMnGameIdx] || { sjsPicks:{}, oppPicks:{}, sjsKda:{}, oppKda:{} });
+
   document.getElementById('mnVod').value = note?.vod || '';
   document.getElementById('mnNotes').value = note?.notes || '';
   document.getElementById('mnDeleteBtn').style.display = matchNotes[matchId] ? 'block' : 'none';
   document.getElementById('matchNoteOverlay').classList.add('open');
 }
+
+function fillMnGameFields(g) {
+  MN_ROLES.forEach(role => {
+    document.getElementById(`mn-sjs-${role}`).value = g.sjsPicks?.[role] || '';
+    document.getElementById(`mn-opp-${role}`).value = g.oppPicks?.[role] || '';
+    document.getElementById(`mn-sjs-kda-${role}`).value = g.sjsKda?.[role] || '';
+    document.getElementById(`mn-opp-kda-${role}`).value = g.oppKda?.[role] || '';
+  });
+}
+
+function switchMnGame(idx) {
+  // Save in-progress edits on the current game before switching tabs
+  commitMnGameFields();
+  currentMnGameIdx = idx;
+  const games = noteGames(matchNotes[currentMatchNoteId]);
+  document.querySelectorAll('#mnGameTabs button').forEach((b,i)=>b.className='btn-sm '+(i===idx?'btn-report':'btn-tcode'));
+  fillMnGameFields(games[idx] || { sjsPicks:{}, oppPicks:{}, sjsKda:{}, oppKda:{} });
+}
+
+// Reads the form fields back into the in-memory games array for the currently-open match
+// (without persisting to localStorage) so tab-switching doesn't lose unsaved edits.
+function commitMnGameFields() {
+  if (!currentMatchNoteId) return;
+  const existing = matchNotes[currentMatchNoteId];
+  const games = noteGames(existing);
+  const g = games[currentMnGameIdx] || { sjsPicks:{}, oppPicks:{}, sjsPlayers:{}, oppPlayers:{}, sjsKda:{}, oppKda:{} };
+  const sjsPicks={}, oppPicks={}, sjsKda={}, oppKda={};
+  MN_ROLES.forEach(role => {
+    sjsPicks[role] = document.getElementById(`mn-sjs-${role}`).value;
+    oppPicks[role] = document.getElementById(`mn-opp-${role}`).value;
+    sjsKda[role]   = document.getElementById(`mn-sjs-kda-${role}`).value.trim();
+    oppKda[role]   = document.getElementById(`mn-opp-kda-${role}`).value.trim();
+  });
+  games[currentMnGameIdx] = { ...g, sjsPicks, oppPicks, sjsKda, oppKda };
+  matchNotes[currentMatchNoteId] = { ...(existing||{}), games };
+}
+
 function closeMatchNoteOverlay() { document.getElementById('matchNoteOverlay').classList.remove('open'); currentMatchNoteId = null; }
 
 function saveMatchNote() {
   if (!currentMatchNoteId) return;
-  const sjsPicks={}, oppPicks={};
-  MN_ROLES.forEach(role => {
-    sjsPicks[role] = document.getElementById(`mn-sjs-${role}`).value;
-    oppPicks[role] = document.getElementById(`mn-opp-${role}`).value;
-  });
+  commitMnGameFields();
+  const current = matchNotes[currentMatchNoteId];
   matchNotes[currentMatchNoteId] = {
-    games: [{ sjsPicks, oppPicks, sjsPlayers:{}, oppPlayers:{}, sjsKda:{}, oppKda:{} }],
+    ...current,
     vod: document.getElementById('mnVod').value.trim(),
     notes: document.getElementById('mnNotes').value.trim(),
     ts: Date.now(),
