@@ -716,7 +716,7 @@ tbody td{padding:12px 14px;color:var(--text)}
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
 const CHAMPS = ["Aatrox","Ahri","Akali","Akshan","Alistar","Ambessa","Amumu","Anivia","Annie","Aphelios","Ashe","Aurelion Sol","Aurora","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum","Briar","Caitlyn","Camille","Cassiopeia","Cho'Gath","Corki","Darius","Diana","Dr. Mundo","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen","Hecarim","Heimerdinger","Hwei","Illaoi","Irelia","Ivern","Janna","Jarvan IV","Jax","Jayce","Jhin","Jinx","K'Sante","Kai'Sa","Kalista","Karma","Karthus","Kassadin","Katarina","Kayle","Kayn","Kennen","Kha'Zix","Kindred","Kled","Kog'Maw","LeBlanc","Lee Sin","Leona","Lillia","Lissandra","Lucian","Lulu","Lux","Malphite","Malzahar","Maokai","Master Yi","Mel","Milio","Miss Fortune","Mordekaiser","Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko","Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona","Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara","Yuumi","Zaahen","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"].sort();
 
-const ICON_MAP = {"Bel'Veth":"Belveth","Cho'Gath":"Chogath","Dr. Mundo":"DrMundo","Jarvan IV":"JarvanIV","Kai'Sa":"Kaisa","Kha'Zix":"Khazix","Kog'Maw":"KogMaw","K'Sante":"KSante","LeBlanc":"Leblanc","Lee Sin":"LeeSin","Miss Fortune":"MissFortune","Nunu & Willump":"Nunu","Rek'Sai":"RekSai","Renata Glasc":"Renata","Tahm Kench":"TahmKench","Twisted Fate":"TwistedFate","Vel'Koz":"Velkoz","Xin Zhao":"XinZhao","Aurelion Sol":"AurelionSol","Master Yi":"MasterYi","Wukong":"MonkeyKing","Ambessa":"Ambessa","Yunara":"Yunara"};
+const ICON_MAP = {"Bel'Veth":"Belveth","Cho'Gath":"Chogath","Dr. Mundo":"DrMundo","Jarvan IV":"JarvanIV","Kai'Sa":"Kaisa","Kha'Zix":"Khazix","Kog'Maw":"KogMaw","K'Sante":"KSante","LeBlanc":"Leblanc","Lee Sin":"LeeSin","Miss Fortune":"MissFortune","Nunu & Willump":"Nunu","Rek'Sai":"RekSai","Renata Glasc":"Renata","Tahm Kench":"TahmKench","Twisted Fate":"TwistedFate","Vel'Koz":"Velkoz","Xin Zhao":"XinZhao","Aurelion Sol":"AurelionSol","Master Yi":"MasterYi","Wukong":"MonkeyKing","Ambessa":"Ambessa","Yunara":"Yunara","FiddleSticks":"Fiddlesticks"};
 const DDV = "16.9.1";
 function iconUrl(n){const k=ICON_MAP[n]||n.replace(/[^a-zA-Z]/g,'');return`https://ddragon.leagueoflegends.com/cdn/${DDV}/img/champion/${k}.png`;}
 function champCell(n){if(!n)return'';return`<div class="champ-cell"><img class="champ-icon" src="${iconUrl(n)}" alt="${n}" onerror="this.src='';this.style.display='none'"><span class="champ-name">${n}</span></div>`;}
@@ -2272,18 +2272,54 @@ function renderSoloQCard(data){
 
   const posLabel = {TOP:'Top',JUNGLE:'Jng',MIDDLE:'Mid',BOTTOM:'Bot',UTILITY:'Sup'};
 
+  function relDate(ts){
+    if(!ts) return '';
+    const d = Math.floor((Date.now()-ts)/86400000);
+    if(d===0) return 'Today';
+    if(d===1) return '1d ago';
+    if(d<7) return `${d}d ago`;
+    const dt=new Date(ts);
+    return `${dt.toLocaleString('default',{month:'short'})} ${dt.getDate()}`;
+  }
+
+  // Top champions aggregated from match history
+  const champMap={};
+  for(const m of matches||[]){
+    if(!champMap[m.champion]) champMap[m.champion]={games:0,wins:0};
+    champMap[m.champion].games++;
+    if(m.win) champMap[m.champion].wins++;
+  }
+  const topChamps=Object.entries(champMap).sort((a,b)=>b[1].games-a[1].games).slice(0,3);
+  const topChampsHtml = topChamps.length>0 ? `
+    <div style="padding:10px 18px 0;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Top Champions (Recent)</div>
+      <div style="display:flex;gap:10px;padding-bottom:12px">
+        ${topChamps.map(([champ,s])=>{
+          const wr=((s.wins/s.games)*100).toFixed(0);
+          const wrC=wr>=55?'var(--win)':wr>=50?'var(--gold)':'var(--loss)';
+          return `<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+            <img src="${iconUrl(champ)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">
+            <div style="min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${champ}</div>
+              <div style="font-size:10px;color:${wrC}">${wr}% <span style="color:var(--text3)">(${s.games}G)</span></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
   const matchRows = (matches||[]).map(m=>{
     const ratio = m.deaths===0 ? (m.kills+m.assists).toFixed(1) : ((m.kills+m.assists)/m.deaths).toFixed(1);
     const ratioColor = parseFloat(ratio)>=4?'var(--win)':parseFloat(ratio)>=2.5?'var(--gold)':'var(--loss)';
     const dur = `${Math.floor(m.duration/60)}:${String(m.duration%60).padStart(2,'0')}`;
     const pos = posLabel[m.position]||'—';
-    const csMin = m.duration>0?(m.cs/(m.duration/60)).toFixed(1):0;
+    const dateStr = relDate(m.gameDate);
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
       <div style="width:5px;height:5px;border-radius:50%;flex-shrink:0;background:${m.win?'var(--win)':'var(--loss)'}"></div>
       <img src="${iconUrl(m.champion)}" style="width:26px;height:26px;border-radius:4px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.champion}</div>
-        <div style="font-size:10px;color:var(--text3)">${pos} · ${dur}</div>
+        <div style="font-size:10px;color:var(--text3)">${pos} · ${dur}${dateStr?` · ${dateStr}`:''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;font-weight:700;color:${ratioColor}">${ratio} KDA</div>
@@ -2317,6 +2353,7 @@ function renderSoloQCard(data){
       <div class="player-stat"><div class="player-stat-label">Losses</div><div class="player-stat-val" style="color:var(--loss)">${losses}</div></div>
       <div class="player-stat"><div class="player-stat-label">Win Rate</div><div class="player-stat-val" style="color:${wrColor}">${wr}%</div></div>
     </div>
+    ${topChampsHtml}
     ${matchSection}
   </div>`;
 }

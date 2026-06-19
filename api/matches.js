@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
   if (!puuid || !key) return res.status(400).json({ error: 'Missing puuid or key' });
   if (!/^RGAPI-[a-zA-Z0-9-]+$/.test(key)) return res.status(400).json({ error: 'Invalid key format' });
 
-  const gameCount = Math.min(parseInt(count) || 7, 15);
+  const gameCount = Math.min(parseInt(count) || 10, 20);
 
   try {
     // 1. Get recent ranked solo queue match IDs (queue=420)
@@ -71,6 +71,7 @@ module.exports = async function handler(req, res) {
         assists:   p.assists,
         cs:        p.totalMinionsKilled + p.neutralMinionsKilled,
         duration:  m.info.gameDuration,   // seconds
+        gameDate:  m.info.gameStartTimestamp, // epoch ms
       };
     }).filter(Boolean);
 
