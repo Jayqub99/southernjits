@@ -23,7 +23,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { webhookUrl, session } = req.body || {};
+  const { webhookUrl, session, teamName } = req.body || {};
+  const team = (typeof teamName === 'string' && teamName.trim()) ? teamName.trim() : 'Southern Jits';
 
   if (!webhookUrl || !Array.isArray(session) || !session.length) {
     return res.status(400).json({ error: 'Missing webhookUrl or session data' });
@@ -72,11 +73,11 @@ module.exports = async function handler(req, res) {
   });
 
   const embed = {
-    title:       `⚔️  Southern Jits vs ${opponent}`,
+    title:       `⚔️  ${team} vs ${opponent}`,
     description: date,
     color,
     fields,
-    footer:     { text: 'Southern Jits Scrims' },
+    footer:     { text: `${team} Scrims` },
     timestamp:  new Date().toISOString(),
   };
 
