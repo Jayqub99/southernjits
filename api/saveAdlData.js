@@ -7,20 +7,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Two accepted body shapes:
-    //   [...scrims]           → legacy, writes row 1 (Southern Jits)
-    //   { row: N, data: ... } → writes row N (3 = ADL, 9 = teams registry, 10+ = teams)
-    let row = 1;
-    let data = req.body;
-    if (data && !Array.isArray(data) && typeof data === 'object' && 'row' in data) {
-      row = parseInt(data.row) || 1;
-      data = data.data;
-    }
-    if (row < 1 || row === 2) {
-      return res.status(400).json({ error: 'Invalid row' });
-    }
+    const data = req.body;
 
-    // Use upsert so the row is created automatically if it doesn't exist yet
     const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/scrims`, {
       method: 'POST',
       headers: {
@@ -29,7 +17,7 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ id: row, data, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ id: 3, data, updated_at: new Date().toISOString() })
     });
 
     if (!supaRes.ok) {
