@@ -618,6 +618,14 @@ tbody td{padding:12px 14px;color:var(--text)}
           <input type="color" id="roster-accent-input" value="#e94560" style="width:44px;height:34px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
         </div>
       </div>
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <label class="form-label" style="display:block;margin-bottom:6px">Team Password</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="roster-password-input" class="form-input" style="flex:1" placeholder="Leave blank to keep current" autocomplete="new-password">
+          <button type="button" class="edit-btn" style="flex-shrink:0" onclick="clearRosterPassword()">Remove</button>
+        </div>
+        <div id="roster-password-status" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+      </div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">One player per line — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Name: Role1, Role2</code> (roles optional)</p>
       <textarea id="roster-text" class="form-input" style="width:100%;min-height:180px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.6" placeholder="Aaron: Top, Mid&#10;Elisha: Jng"></textarea>
       <button class="lock-btn" style="margin-top:14px;width:100%" onclick="saveRoster()">Save Roster</button>
@@ -1072,8 +1080,15 @@ function renderTeamSelect(){
   const sel = document.getElementById('team-select');
   if(!sel) return;
   sel.innerHTML = TEAMS.map(t=>
-    `<option value="${t.row}"${t.row===activeTeamRow?' selected':''}>${esc(t.name)}</option>`
+    `<option value="${t.row}"${t.row===activeTeamRow?' selected':''}>${t.password?'🔒 ':''}${esc(t.name)}</option>`
   ).join('') + '<option value="__new">＋ New Team…</option>';
+}
+
+// Password-protected teams (team.password set) require entering that
+// password before switching; once entered it's remembered per-browser via
+// localStorage so it isn't re-asked every switch.
+function isTeamUnlocked(row){
+  return localStorage.getItem('sjs_team_unlocked_'+row) === 'true';
 }
 
 function onTeamSelect(sel){
@@ -1083,7 +1098,19 @@ function onTeamSelect(sel){
     createTeam();
     return;
   }
-  switchTeam(parseInt(sel.value));
+  const row = parseInt(sel.value);
+  const team = TEAMS.find(t=>t.row===row);
+  if(team && team.password && !isTeamUnlocked(row)){
+    const val = prompt(`Enter password for ${team.name}:`);
+    if(val === null){ sel.value = String(activeTeamRow); return; }
+    if(val !== team.password){
+      toast('Incorrect team password','var(--loss)');
+      sel.value = String(activeTeamRow);
+      return;
+    }
+    try{ localStorage.setItem('sjs_team_unlocked_'+row, 'true'); }catch(e){}
+  }
+  switchTeam(row);
 }
 
 function switchTeam(row){
@@ -1148,16 +1175,28 @@ function renderPlayerSelectBar(){
 }
 
 let _pendingLogo; // undefined = unchanged, null/string = cleared/new upload; reset per modal open
+let _pendingPasswordClear; // true = "Remove" was clicked this session; reset per modal open
 
 function openRosterEditor(){
   const t = activeTeam();
   _pendingLogo = undefined;
+  _pendingPasswordClear = false;
   document.getElementById('roster-title').textContent = `${t.name} — Roster`;
   document.getElementById('roster-text').value = (t.players||[]).map(p=>`${p.name}: ${(p.roles||[]).join(', ')}`).join('\n');
   document.getElementById('roster-logo-preview').src = t.logo || initialsLogoDataUri(t.name, t.accent || '#e94560');
   document.getElementById('roster-logo-input').value = '';
   document.getElementById('roster-accent-input').value = t.accent || '#e94560';
+  document.getElementById('roster-password-input').value = '';
+  document.getElementById('roster-password-status').textContent = t.password
+    ? '🔒 Password protected — enter a new password to change it'
+    : '🔓 Open access — no password set';
   document.getElementById('roster-modal').classList.add('open');
+}
+
+function clearRosterPassword(){
+  _pendingPasswordClear = true;
+  document.getElementById('roster-password-input').value = '';
+  document.getElementById('roster-password-status').textContent = '🔓 Will be open access after save';
 }
 
 function onRosterLogoChange(event){
@@ -1182,6 +1221,9 @@ function saveRoster(){
   activeTeam().players = players;
   activeTeam().accent = document.getElementById('roster-accent-input').value;
   if(_pendingLogo !== undefined) activeTeam().logo = _pendingLogo;
+  const pwVal = document.getElementById('roster-password-input').value;
+  if(pwVal) activeTeam().password = pwVal;
+  else if(_pendingPasswordClear) delete activeTeam().password;
   saveTeams();
   document.getElementById('roster-modal').classList.remove('open');
   activePlayerSelect = 'all';
@@ -3210,8 +3252,18 @@ function closeNotifs(){
   document.getElementById('notif-panel').classList.remove('open');
 }
 
-// Boot: the hardcoded scrims seed + sjs_v3 cache belong to row 1 (Southern
-// Jits). If we're booting into a different team, swap to its cache first.
+// Boot: if localStorage remembers a password-protected team as active but
+// this browser was never unlocked for it (e.g. private tab, cleared unlock
+// key), fall back to Southern Jits rather than booting straight into it.
+if(activeTeamRow !== 1){
+  const bootTeam = TEAMS.find(t=>t.row===activeTeamRow);
+  if(bootTeam && bootTeam.password && !isTeamUnlocked(activeTeamRow)){
+    activeTeamRow = 1;
+    try{ localStorage.setItem('sjs_active_team', '1'); }catch(e){}
+  }
+}
+// The hardcoded scrims seed + sjs_v3 cache belong to row 1 (Southern Jits).
+// If we're booting into a different team, swap to its cache first.
 if(activeTeamRow !== 1){
   let _c = null;
   try{ _c = JSON.parse(localStorage.getItem(scrimCacheKey(activeTeamRow))||'null'); }catch(e){}
