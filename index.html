@@ -7,7 +7,7 @@
 <title>Southern Jits Scrims</title>
 <script>
 (function(){
-  if(localStorage.getItem('sjs_viewer_auth') !== 'true'){
+  if(localStorage.getItem('sjs_viewer_auth_v2') !== 'true'){
     document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('sjs-lockscreen').style.display = 'flex';
       document.getElementById('sjs-main').style.display = 'none';
@@ -3323,7 +3323,7 @@ document.addEventListener('click', function(e){
 function sjsUnlock(){
   const val = document.getElementById('sjs-lock-input').value;
   if(val === 'lameahhteam'){
-    localStorage.setItem('sjs_viewer_auth','true');
+    localStorage.setItem('sjs_viewer_auth_v2','true');
     document.getElementById('sjs-lockscreen').style.display = 'none';
     document.getElementById('sjs-main').style.display = 'block';
   } else {
@@ -3334,7 +3334,7 @@ function sjsUnlock(){
 }
 
 // Show main if already authenticated
-if(localStorage.getItem('sjs_viewer_auth') === 'true'){
+if(localStorage.getItem('sjs_viewer_auth_v2') === 'true'){
   document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('sjs-lockscreen').style.display = 'none';
     document.getElementById('sjs-main').style.display = 'block';
