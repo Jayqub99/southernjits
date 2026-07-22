@@ -364,7 +364,9 @@ tbody td{padding:12px 14px;color:var(--text)}
     <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Viewing:</span>
     <button id="dr-from" class="data-range-btn active" onclick="toggleDataRange(false)">Since May 4</button>
     <button id="dr-all" class="data-range-btn" onclick="toggleDataRange(true)">All Time</button>
+    <select id="era-select" onchange="onEraSelect(this)" title="View an archived era" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.05em;padding:6px 10px;cursor:pointer;outline:none"></select>
   </div>
+  <div id="era-readonly-note" style="display:none;font-size:12px;color:var(--warn);margin-top:-12px;margin-bottom:20px">📦 Viewing an archived era — read only. Player filters and stats reflect that era's roster; Solo Queue always stays on the current roster.</div>
 
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
@@ -633,6 +635,10 @@ tbody td{padding:12px 14px;color:var(--text)}
           <button type="button" class="edit-btn" style="flex-shrink:0" onclick="document.getElementById('roster-datefrom-input').value=''">Clear</button>
         </div>
         <div style="font-size:12px;color:var(--text2);margin-top:6px">Games before this date are hidden by default (still viewable via the All Time toggle). Leave blank to always show full history.</div>
+      </div>
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <button type="button" class="edit-btn" style="width:100%" onclick="archiveEraAndReset()">📦 Archive Current Roster as Era &amp; Start Fresh</button>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Saves the roster/date-range below the textarea as a named past era (viewable later via the Viewing dropdown), then clears the form so you can type the new roster.</div>
       </div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">One player per line — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Name: Role1, Role2</code> (roles optional)</p>
       <textarea id="roster-text" class="form-input" style="width:100%;min-height:180px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.6" placeholder="Aaron: Top, Mid&#10;Elisha: Jng"></textarea>
@@ -987,7 +993,10 @@ function wrClass(wr){return wr>=0.6?'wr-good':wr>=0.4?'wr-mid':'wr-bad';}
 function fmtDate(d){const dt=new Date(d);return isNaN(dt)?d:dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
 function toast(msg,color='var(--win)'){const t=document.getElementById('toast');t.textContent=msg;t.style.borderColor=color;t.style.color=color;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function champOpts(){return CHAMPS.map(c=>`<option value="${c}">${c}</option>`).join('');}
-function playerOpts(){return['<option value="">—</option>',...PLAYER_NAMES.map(p=>`<option value="${p}">${p}</option>`)].join('');}
+// Logging/editing a match is always a live, current-moment action, so this
+// always offers the live roster — never an archived era's, even if one is
+// currently being viewed.
+function playerOpts(){return['<option value="">—</option>',...LIVE_PLAYER_NAMES.map(p=>`<option value="${p}">${p}</option>`)].join('');}
 
 function parseKDA(str){
   if(!str) return null;
@@ -1011,6 +1020,13 @@ function kdaColor(ratio){
 // ── DATA RANGE ────────────────────────────────────────────────────────────
 let DATA_FROM = '2026-05-04'; // per-team "core era" start — null means no cutoff
 let showAllData = false;
+// null = viewing the live/current roster+range; otherwise an index into
+// activeTeam().eras — an archived roster+date-range snapshot from before a
+// reset. Solo Queue/Riot IDs deliberately ignore this (see LIVE_PLAYER_NAMES)
+// since rank/LP is a live, current-moment stat, not historical.
+let viewingEraIdx = null;
+let LIVE_PLAYERS = [];
+let LIVE_PLAYER_NAMES = [];
 // Normalize M/D/YYYY → YYYY-MM-DD so date strings are directly comparable.
 function normDate(d){
   if(!d) return '';
@@ -1018,10 +1034,20 @@ function normDate(d){
   if(p.length===3) return `${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`;
   return d; // already YYYY-MM-DD or unknown — leave as-is
 }
-// Returns the scrims array filtered by the active date range.
-// Render functions use this instead of the raw scrims array so the
-// "Since May 4" / "All Time" toggle works everywhere automatically.
-function vs(){ return (showAllData || !DATA_FROM) ? scrims : scrims.filter(s=>normDate(s.date)>=DATA_FROM); }
+// Returns the scrims array filtered by the active date range: an archived
+// era's fixed [dateFrom, dateTo) window when viewing one, otherwise the
+// normal "Since X" / "All Time" toggle. Render functions use this instead of
+// the raw scrims array so both mechanisms work everywhere automatically.
+function vs(){
+  const era = viewingEraIdx!==null ? (activeTeam().eras||[])[viewingEraIdx] : null;
+  if(era){
+    return scrims.filter(s=>{
+      const d = normDate(s.date);
+      return (!era.dateFrom || d>=era.dateFrom) && (!era.dateTo || d<era.dateTo);
+    });
+  }
+  return (showAllData || !DATA_FROM) ? scrims : scrims.filter(s=>normDate(s.date)>=DATA_FROM);
+}
 // Always looks up a scrim's index in the GLOBAL array — safe to call even
 // from render functions that shadow 'scrims' with vs() locally.
 function realIdx(s){ return scrims.indexOf(s); }
@@ -1038,10 +1064,12 @@ function toggleDataRange(all){
 // cutoff, filter bars. Called at boot and on every team switch.
 function applyTeam(){
   const t = activeTeam();
-  PLAYERS = Array.isArray(t.players) ? t.players : [];
-  PLAYER_NAMES = PLAYERS.map(p=>p.name);
+  LIVE_PLAYERS = Array.isArray(t.players) ? t.players : [];
+  LIVE_PLAYER_NAMES = LIVE_PLAYERS.map(p=>p.name);
+  viewingEraIdx = null; // switching teams always drops back to the live roster/range
   DATA_FROM = t.dataFrom || null;
   if(!DATA_FROM) showAllData = true;
+  applyEraView();
 
   // Branding
   document.title = `${t.name} Scrims`;
@@ -1064,24 +1092,91 @@ function applyTeam(){
     logoImg.alt = t.name;
   }
 
-  // Data range toggle — hidden for teams without a core-era cutoff
-  const bar = document.getElementById('data-range-bar');
-  if(bar){
-    if(DATA_FROM){
-      bar.style.display = 'flex';
-      const d = new Date(DATA_FROM+'T00:00:00');
-      document.getElementById('dr-from').textContent = `Since ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
-      document.getElementById('dr-from').classList.toggle('active', !showAllData);
-      document.getElementById('dr-all').classList.toggle('active', showAllData);
-    } else {
-      bar.style.display = 'none';
-    }
-  }
-
+  renderDateRangeBar();
+  renderEraSelect();
   renderTeamSelect();
   renderPlayerSelectBar();
   if(typeof renderRiotIdSection === 'function') renderRiotIdSection();
   renderAll();
+}
+
+// Sets PLAYERS/PLAYER_NAMES to whichever roster is being viewed: the archived
+// era's snapshot if one is selected, otherwise the live current roster.
+// Solo Queue/Riot IDs intentionally read LIVE_PLAYER_NAMES instead, so they
+// never follow an archived era.
+function applyEraView(){
+  const t = activeTeam();
+  const era = viewingEraIdx!==null ? (t.eras||[])[viewingEraIdx] : null;
+  PLAYERS = era ? (Array.isArray(era.players) ? era.players : []) : LIVE_PLAYERS;
+  PLAYER_NAMES = PLAYERS.map(p=>p.name);
+}
+
+// The "Since X / All Time" toggle only makes sense for the live roster's
+// open-ended range; an archived era has its own fixed [dateFrom, dateTo)
+// window, so the toggle is replaced by a read-only note while one is active.
+function renderDateRangeBar(){
+  const bar = document.getElementById('data-range-bar');
+  const note = document.getElementById('era-readonly-note');
+  if(!bar) return;
+  const viewingArchived = viewingEraIdx !== null;
+  document.getElementById('dr-from').style.display = viewingArchived ? 'none' : '';
+  document.getElementById('dr-all').style.display = viewingArchived ? 'none' : '';
+  if(note) note.style.display = viewingArchived ? 'block' : 'none';
+
+  if(viewingArchived){
+    bar.style.display = 'flex'; // keep the era-select visible/usable
+    return;
+  }
+  if(DATA_FROM){
+    bar.style.display = 'flex';
+    const d = new Date(DATA_FROM+'T00:00:00');
+    document.getElementById('dr-from').textContent = `Since ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    document.getElementById('dr-from').classList.toggle('active', !showAllData);
+    document.getElementById('dr-all').classList.toggle('active', showAllData);
+    return;
+  }
+  // No cutoff and no archived era selected — keep the bar around only if
+  // there are eras to pick from via the dropdown, else hide it entirely.
+  bar.style.display = (activeTeam().eras||[]).length ? 'flex' : 'none';
+}
+
+function renderEraSelect(){
+  const sel = document.getElementById('era-select');
+  if(!sel) return;
+  const eras = activeTeam().eras || [];
+  if(!eras.length){ sel.style.display = 'none'; sel.innerHTML=''; return; }
+  sel.style.display = '';
+  sel.innerHTML = `<option value="current"${viewingEraIdx===null?' selected':''}>Current</option>` +
+    eras.map((e,i)=>`<option value="${i}"${viewingEraIdx===i?' selected':''}>${esc(e.label)}</option>`).join('');
+}
+
+function onEraSelect(sel){
+  viewingEraIdx = sel.value==='current' ? null : parseInt(sel.value);
+  applyEraView();
+  renderDateRangeBar();
+  activePlayerSelect = 'all';
+  champPlayerFilter = new Set(PLAYER_NAMES);
+  renderPlayerSelectBar();
+  renderAll();
+  renderMatchups();
+}
+
+// Archives the current roster + date range as a named past era (visible
+// later via the Viewing dropdown), then clears the roster editor's fields so
+// the user can type the new lineup as a distinct, deliberate second step.
+function archiveEraAndReset(){
+  const t = activeTeam();
+  const today = new Date().toISOString().slice(0,10);
+  const hint = t.dataFrom ? `${t.dataFrom} to ${today}` : `up to ${today}`;
+  const label = (prompt(`Name this era (currently ${hint}):`, '')||'').trim();
+  if(!label) return;
+  if(!Array.isArray(t.eras)) t.eras = [];
+  t.eras.push({label, dateFrom: t.dataFrom||null, dateTo: today, players: JSON.parse(JSON.stringify(t.players||[]))});
+  saveTeams();
+  document.getElementById('roster-text').value = '';
+  document.getElementById('roster-datefrom-input').value = today;
+  renderEraSelect();
+  toast(`✓ Archived "${label}" — enter the new roster and Save`);
 }
 
 function renderTeamSelect(){
@@ -1174,12 +1269,16 @@ async function loadTeams(){
 function renderPlayerSelectBar(){
   const bar = document.getElementById('player-select-bar');
   if(!bar) return;
+  // Roster edits only ever apply to the live team, so hide the entry point
+  // while browsing a read-only archived era.
+  const editBtn = viewingEraIdx===null
+    ? `<button class="edit-btn player-select-btn" style="margin-left:auto" onclick="openRosterEditor()">✎ Edit Roster</button>`
+    : '';
   bar.innerHTML =
     `<button class="player-select-btn${activePlayerSelect==='all'?' active':''}" onclick="setPlayerFilter('all',this)">All Players</button>` +
     PLAYER_NAMES.map(n=>
       `<button class="player-select-btn${activePlayerSelect===n?' active':''}" onclick="setPlayerFilter('${esc(n)}',this)">${esc(n)}</button>`
-    ).join('') +
-    `<button class="edit-btn player-select-btn" style="margin-left:auto" onclick="openRosterEditor()">✎ Edit Roster</button>`;
+    ).join('') + editBtn;
 }
 
 let _pendingLogo; // undefined = unchanged, null/string = cleared/new upload; reset per modal open
@@ -2289,7 +2388,9 @@ function confirmImport(){
 
 // ── SOLO QUEUE LIVE (CORS PROXY) ───────────────────────────────────────────
 // Solo queue cards follow the active team's roster.
-function soloqPlayerNames(){ return PLAYER_NAMES; }
+// Deliberately LIVE_PLAYER_NAMES, not PLAYER_NAMES: rank/LP is a live,
+// current-moment stat, so Solo Queue/Riot IDs never follow an archived era.
+function soloqPlayerNames(){ return LIVE_PLAYER_NAMES; }
 
 // ── RIOT IDs (stored in Supabase config row, cached in localStorage) ─────
 let _riotIds = null;
