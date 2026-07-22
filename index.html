@@ -626,6 +626,14 @@ tbody td{padding:12px 14px;color:var(--text)}
         </div>
         <div id="roster-password-status" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
       </div>
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <label class="form-label" style="display:block;margin-bottom:6px">Data Range Start</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="roster-datefrom-input" class="form-input" style="flex:1">
+          <button type="button" class="edit-btn" style="flex-shrink:0" onclick="document.getElementById('roster-datefrom-input').value=''">Clear</button>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Games before this date are hidden by default (still viewable via the All Time toggle). Leave blank to always show full history.</div>
+      </div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">One player per line — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Name: Role1, Role2</code> (roles optional)</p>
       <textarea id="roster-text" class="form-input" style="width:100%;min-height:180px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.6" placeholder="Aaron: Top, Mid&#10;Elisha: Jng"></textarea>
       <button class="lock-btn" style="margin-top:14px;width:100%" onclick="saveRoster()">Save Roster</button>
@@ -1190,6 +1198,7 @@ function openRosterEditor(){
   document.getElementById('roster-password-status').textContent = t.password
     ? '🔒 Password protected — enter a new password to change it'
     : '🔓 Open access — no password set';
+  document.getElementById('roster-datefrom-input').value = t.dataFrom || '';
   document.getElementById('roster-modal').classList.add('open');
 }
 
@@ -1224,6 +1233,8 @@ function saveRoster(){
   const pwVal = document.getElementById('roster-password-input').value;
   if(pwVal) activeTeam().password = pwVal;
   else if(_pendingPasswordClear) delete activeTeam().password;
+  activeTeam().dataFrom = document.getElementById('roster-datefrom-input').value || null;
+  showAllData = !activeTeam().dataFrom; // a freshly-set cutoff should default to the filtered view, not All Time
   saveTeams();
   document.getElementById('roster-modal').classList.remove('open');
   activePlayerSelect = 'all';
