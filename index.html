@@ -324,7 +324,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     <button class="nav-btn" onclick="showPage('players',this)">Players</button>
     <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
     <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
-    <a href="/adl-league.html" class="nav-btn" style="text-decoration:none">ADL League</a>
+    <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
   </nav>
   <div class="header-search">
     <span class="search-icon">🔍</span>
@@ -1068,6 +1068,10 @@ function applyTeam(){
   document.title = `${t.name} Scrims`;
   const brand = `${esc(t.name)} <span>Scrims</span>`;
   const tt = document.getElementById('team-title'); if(tt) tt.innerHTML = brand;
+
+  // ADL League is Southern Jits-specific, not a general per-team feature
+  const adlLink = document.getElementById('nav-adl-link');
+  if(adlLink) adlLink.style.display = (t.row === 1) ? '' : 'none';
 
   // Accent color reskins buttons/badges/highlights everywhere via the CSS vars
   const accentHex = t.accent || '#e94560';
