@@ -5,16 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Southern Jits Scrims — track BJJ scrimmage match results, player statistics, win/loss records, and KDA.">
 <title>Southern Jits Scrims</title>
-<script>
-(function(){
-  if(localStorage.getItem('sjs_viewer_auth_v2') !== 'true'){
-    document.addEventListener('DOMContentLoaded', function(){
-      document.getElementById('sjs-lockscreen').style.display = 'flex';
-      document.getElementById('sjs-main').style.display = 'none';
-    });
-  }
-})();
-</script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -26,7 +16,8 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:var(--font-u);font-size:16px;min-height:100vh}
-#sjs-lockscreen{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:28px}
+#sjs-lockscreen{display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:28px}
+#sjs-main{display:none}
 #sjs-lockscreen::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(var(--accent-rgb),0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none}
 .lock-logo{display:flex;align-items:center;gap:14px}
 .lock-logo-hex{width:52px;height:52px;background:var(--accent);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:900}
@@ -311,9 +302,10 @@ tbody td{padding:12px 14px;color:var(--text)}
     <div class="lock-logo-text">Southern Jits <span>Scrims</span></div>
   </div>
   <div class="lock-box">
-    <h2>Enter Password to Continue</h2>
+    <h2>Select Your Team</h2>
+    <select class="lock-input" id="lock-team-select" onchange="onLockTeamSelect()" style="cursor:pointer"></select>
     <input class="lock-input" id="sjs-lock-input" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')sjsUnlock()">
-    <button class="lock-btn" onclick="sjsUnlock()">Unlock</button>
+    <button class="lock-btn" onclick="sjsUnlock()">Enter</button>
     <span class="lock-error" id="sjs-lock-error">Incorrect password</span>
   </div>
 </div>
@@ -779,7 +771,7 @@ let PLAYER_NAMES = PLAYERS.map(p=>p.name);
 // baked-in <img> markup when unset); accent: optional hex color reskinning
 // buttons/badges/highlights site-wide via the --accent CSS variable.
 let TEAMS = [
-  {row:1, name:'Southern Jits', dataFrom:'2026-05-04', players:PLAYERS, accent:'#e94560'},
+  {row:1, name:'Southern Jits', dataFrom:'2026-05-04', players:PLAYERS, accent:'#e94560', password:'southerngooners'},
 ];
 try{ const _t=JSON.parse(localStorage.getItem('sjs_teams')||'null'); if(Array.isArray(_t)&&_t.length) TEAMS=_t; }catch(e){}
 let activeTeamRow = parseInt(localStorage.getItem('sjs_active_team')||'1');
@@ -1071,13 +1063,11 @@ function applyTeam(){
   if(!DATA_FROM) showAllData = true;
   applyEraView();
 
-  // Branding
+  // Branding (the lock screen keeps its own generic site-level branding now
+  // that it's a team selector rather than a single active team's gate)
   document.title = `${t.name} Scrims`;
   const brand = `${esc(t.name)} <span>Scrims</span>`;
   const tt = document.getElementById('team-title'); if(tt) tt.innerHTML = brand;
-  const lt = document.querySelector('.lock-logo-text'); if(lt) lt.innerHTML = brand;
-  const lh = document.querySelector('.lock-logo-hex');
-  if(lh) lh.textContent = t.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
   // Accent color reskins buttons/badges/highlights everywhere via the CSS vars
   const accentHex = t.accent || '#e94560';
@@ -1095,6 +1085,7 @@ function applyTeam(){
   renderDateRangeBar();
   renderEraSelect();
   renderTeamSelect();
+  renderLockTeamSelect();
   renderPlayerSelectBar();
   if(typeof renderRiotIdSection === 'function') renderRiotIdSection();
   renderAll();
@@ -1185,6 +1176,31 @@ function renderTeamSelect(){
   sel.innerHTML = TEAMS.map(t=>
     `<option value="${t.row}"${t.row===activeTeamRow?' selected':''}>${t.password?'🔒 ':''}${esc(t.name)}</option>`
   ).join('') + '<option value="__new">＋ New Team…</option>';
+}
+
+// The lock screen (front door, shown on every visit — see sjsUnlock) is its
+// own team picker, independent of whichever team ends up active in the app
+// underneath it. Preserves an in-progress pick across re-renders (e.g. a
+// background loadTeams() refresh) rather than resetting the selection.
+function renderLockTeamSelect(){
+  const sel = document.getElementById('lock-team-select');
+  if(!sel) return;
+  const prevVal = sel.value;
+  sel.innerHTML = TEAMS.map(t=>
+    `<option value="${t.row}">${t.password?'🔒 ':''}${esc(t.name)}</option>`
+  ).join('');
+  sel.value = TEAMS.find(t=>String(t.row)===prevVal) ? prevVal : String(activeTeamRow);
+  onLockTeamSelect();
+}
+
+function onLockTeamSelect(){
+  const sel = document.getElementById('lock-team-select');
+  if(!sel) return;
+  const team = TEAMS.find(t=>t.row===parseInt(sel.value));
+  const pwInput = document.getElementById('sjs-lock-input');
+  pwInput.style.display = (team && team.password) ? '' : 'none';
+  pwInput.value = '';
+  document.getElementById('sjs-lock-error').style.display = 'none';
 }
 
 // Password-protected teams (team.password set) require entering that
@@ -3432,25 +3448,30 @@ document.addEventListener('click', function(e){
   };
 })();
 
+// The lock screen always shows on load (see #sjs-lockscreen's CSS default)
+// and always demands the selected team's own password fresh — it doesn't
+// consult sjs_team_unlocked_<row>, even if this browser unlocked that team
+// before. A successful entry still sets that flag so the in-app team
+// switcher (a separate, less strict gate) doesn't re-prompt during the
+// session that follows.
 function sjsUnlock(){
-  const val = document.getElementById('sjs-lock-input').value;
-  if(val === 'southerngooners'){
-    localStorage.setItem('sjs_viewer_auth_v2','true');
-    document.getElementById('sjs-lockscreen').style.display = 'none';
-    document.getElementById('sjs-main').style.display = 'block';
-  } else {
-    const err = document.getElementById('sjs-lock-error');
-    err.style.display = 'block';
-    document.getElementById('sjs-lock-input').value = '';
+  const sel = document.getElementById('lock-team-select');
+  const row = parseInt(sel.value);
+  const team = TEAMS.find(t=>t.row===row);
+  if(!team) return;
+  if(team.password){
+    const val = document.getElementById('sjs-lock-input').value;
+    if(val !== team.password){
+      const err = document.getElementById('sjs-lock-error');
+      err.style.display = 'block';
+      document.getElementById('sjs-lock-input').value = '';
+      return;
+    }
+    try{ localStorage.setItem('sjs_team_unlocked_'+row, 'true'); }catch(e){}
   }
-}
-
-// Show main if already authenticated
-if(localStorage.getItem('sjs_viewer_auth_v2') === 'true'){
-  document.addEventListener('DOMContentLoaded', function(){
-    document.getElementById('sjs-lockscreen').style.display = 'none';
-    document.getElementById('sjs-main').style.display = 'block';
-  });
+  switchTeam(row);
+  document.getElementById('sjs-lockscreen').style.display = 'none';
+  document.getElementById('sjs-main').style.display = 'block';
 }
 </script>
 </div>
