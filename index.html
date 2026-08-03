@@ -225,6 +225,12 @@ tbody td{padding:12px 14px;color:var(--text)}
 .never-pill{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);color:var(--loss);font-size:13px;font-weight:600;padding:5px 12px;border-radius:5px}
 .caution-pill{background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.2);color:var(--warn);font-size:13px;font-weight:600;padding:5px 12px;border-radius:5px}
 .wr-good{color:var(--win);font-weight:700}.wr-mid{color:var(--warn);font-weight:700}.wr-bad{color:var(--loss);font-weight:700}
+.star{cursor:pointer;font-size:19px;line-height:1;color:var(--bg3);transition:color .12s;padding:0 1px}
+.star.on{color:var(--gold)}
+.star:hover{color:var(--gold)}
+.star-clear{cursor:pointer;font-size:11px;color:var(--text3);margin-left:8px}
+.star-clear:hover{color:var(--loss)}
+.status-badge{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:20px;white-space:nowrap}
 
 /* TOAST */
 .notif-btn{position:relative;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;transition:all .2s;flex-shrink:0}
@@ -324,6 +330,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     <button class="nav-btn" onclick="showPage('players',this)">Players</button>
     <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
     <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
+    <button class="nav-btn" onclick="showPage('tryouts',this)">Tryouts</button>
     <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
   </nav>
   <div class="header-search">
@@ -544,6 +551,38 @@ tbody td{padding:12px 14px;color:var(--text)}
     <div id="matchup-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
     <div id="matchup-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:14px">No matchup notes yet. Add the first one!</div>
   </div>
+
+  <!-- TRYOUTS -->
+  <div id="page-tryouts" class="page">
+    <div class="section-header">
+      <span class="section-title">Tryout Candidates</span>
+      <div class="section-line"></div>
+      <button style="background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.3);color:var(--accent);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0" onclick="openTryoutModal()">+ Add Candidate</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center">
+      <select id="to-filter-role" class="form-select" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderTryouts()">
+        <option value="">All Roles</option>
+        <option value="Top">Top</option>
+        <option value="Jng">Jungle</option>
+        <option value="Mid">Mid</option>
+        <option value="ADC">ADC</option>
+        <option value="Sup">Support</option>
+      </select>
+      <select id="to-filter-status" class="form-select" style="width:auto;padding:6px 12px;font-size:12px" onchange="renderTryouts()">
+        <option value="active">Active Only</option>
+        <option value="">All Statuses</option>
+        <option value="signed">Signed</option>
+        <option value="cut">Cut</option>
+      </select>
+      <input id="to-search" class="form-input" type="text" placeholder="Search name or Riot ID..." style="width:220px;padding:6px 12px;font-size:12px" oninput="renderTryouts()">
+      <span style="font-size:11px;color:var(--text3);margin-left:auto">Click a row to edit &middot; click a column to sort</span>
+    </div>
+    <div class="card"><div class="table-wrap"><table id="tryout-table">
+      <thead><tr id="tryout-head"></tr></thead>
+      <tbody></tbody>
+    </table></div></div>
+    <div id="tryout-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:14px">No candidates yet. Add the first one!</div>
+  </div>
 </main>
 
 <!-- LOG SCRIM MODAL -->
@@ -635,6 +674,43 @@ tbody td{padding:12px 14px;color:var(--text)}
       <p style="font-size:13px;color:var(--text2);margin-bottom:10px">One player per line — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Name: Role1, Role2</code> (roles optional)</p>
       <textarea id="roster-text" class="form-input" style="width:100%;min-height:180px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.6" placeholder="Aaron: Top, Mid&#10;Elisha: Jng"></textarea>
       <button class="lock-btn" style="margin-top:14px;width:100%" onclick="saveRoster()">Save Roster</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRYOUT MODAL -->
+<div class="modal-overlay" id="tryout-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="tryout-modal-title">Add Candidate</div>
+      <button class="modal-close" aria-label="Close" onclick="closeTryoutModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="to-name" placeholder="Display name"></div>
+        <div class="form-group"><label class="form-label">Riot ID</label><input type="text" class="form-input" id="to-riot" placeholder="Name#TAG"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Roles</label><input type="text" class="form-input" id="to-roles" placeholder="Mid, ADC"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-select" id="to-status">
+            <option value="active">Active</option>
+            <option value="signed">Signed</option>
+            <option value="cut">Cut</option>
+          </select>
+        </div>
+      </div>
+      <label class="form-label" style="display:block;margin:18px 0 4px">Evaluation</label>
+      <div id="to-ratings"></div>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="to-notes" style="min-height:100px;resize:vertical;font-size:13px;line-height:1.6" placeholder="Strengths, weaknesses, champion pool, VOD links..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="flex:1;min-width:140px" onclick="saveTryout()">Save Candidate</button>
+        <button class="edit-btn" id="to-promote-btn" onclick="promoteTryout()">⬆ Promote to Roster</button>
+        <button class="edit-btn" id="to-delete-btn" onclick="deleteTryout()">🗑 Delete</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3263,6 +3339,202 @@ function deleteMatchup(){
   toast('Matchup deleted.', 'var(--loss)');
 }
 
+// ── TRYOUTS ───────────────────────────────────────────────────────────────
+// Candidate evaluations live per-team in the teams registry (row 9) alongside
+// players/eras, so they sync across devices the same way rosters do.
+// Deliberately separate from the scrim/roster data: candidates don't appear in
+// the scrim logger's player dropdowns until they're promoted to the roster.
+const TRYOUT_CATS = [
+  ['mech','Mechanics',     'Mech'],
+  ['know','Game Knowledge','Game IQ'],
+  ['comm','Communication', 'Comms'],
+  ['att', 'Attitude',      'Attitude'],
+  ['cons','Consistency',   'Consist'],
+];
+const TRYOUT_STATUS = {
+  active: {label:'Active', color:'var(--accent)'},
+  signed: {label:'Signed', color:'var(--win)'},
+  cut:    {label:'Cut',    color:'var(--loss)'},
+};
+
+let editTryoutIdx  = -1;   // -1 = adding a new candidate
+let _tryoutRatings = {};   // in-progress ratings while the modal is open
+let tryoutSort     = {key:'avg', dir:-1};
+
+function tryouts(){
+  const t = activeTeam();
+  if(!Array.isArray(t.tryouts)) t.tryouts = [];
+  return t.tryouts;
+}
+
+// Averages only the categories actually rated, so a half-finished evaluation
+// isn't dragged down by counting unrated categories as zero.
+function tryoutAvg(c){
+  const vals = TRYOUT_CATS.map(([k])=>(c.ratings||{})[k]).filter(v=>v>0);
+  if(!vals.length) return null;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+
+function ratingColor(v){ return v>=4 ? 'var(--win)' : v>=3 ? 'var(--warn)' : 'var(--loss)'; }
+
+function setTryoutSort(key){
+  if(tryoutSort.key===key) tryoutSort.dir *= -1;
+  else tryoutSort = {key, dir: key==='name' ? 1 : -1};
+  renderTryouts();
+}
+
+function renderTryouts(){
+  const head  = document.getElementById('tryout-head');
+  const tbody = document.querySelector('#tryout-table tbody');
+  if(!head || !tbody) return;
+
+  const icon = k => tryoutSort.key===k ? (tryoutSort.dir<0 ? ' ↓' : ' ↑') : '';
+  const sortableTh = (k,label,extra='') =>
+    `<th style="cursor:pointer;user-select:none;${extra}" onclick="setTryoutSort('${k}')">${label}${icon(k)}</th>`;
+  head.innerHTML =
+    sortableTh('name','Candidate') +
+    '<th style="width:110px">Roles</th>' +
+    TRYOUT_CATS.map(([k,,short])=>sortableTh(k,short,'text-align:center')).join('') +
+    sortableTh('avg','Avg','text-align:center') +
+    '<th style="width:80px">Status</th>';
+
+  const roleF   = document.getElementById('to-filter-role').value;
+  const statusF = document.getElementById('to-filter-status').value;
+  const q       = document.getElementById('to-search').value.trim().toLowerCase();
+
+  const list = tryouts().map((c,i)=>({c,i})).filter(({c})=>{
+    if(roleF && !(c.roles||[]).some(r=>r.toLowerCase()===roleF.toLowerCase())) return false;
+    if(statusF && (c.status||'active')!==statusF) return false;
+    if(q && !`${c.name||''} ${c.riotId||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    if(tryoutSort.key==='name'){
+      const va=(a.c.name||'').toLowerCase(), vb=(b.c.name||'').toLowerCase();
+      return va<vb ? -tryoutSort.dir : va>vb ? tryoutSort.dir : 0;
+    }
+    const val = c => tryoutSort.key==='avg'
+      ? (tryoutAvg(c) === null ? -1 : tryoutAvg(c))
+      : ((c.ratings||{})[tryoutSort.key] || 0);
+    return (val(a.c) - val(b.c)) * tryoutSort.dir;
+  });
+
+  document.getElementById('tryout-empty').style.display = list.length ? 'none' : 'block';
+  document.getElementById('tryout-table').parentElement.parentElement.style.display = list.length ? '' : 'none';
+
+  tbody.innerHTML = list.map(({c,i})=>{
+    const avg = tryoutAvg(c);
+    const st  = TRYOUT_STATUS[c.status||'active'] || TRYOUT_STATUS.active;
+    const cells = TRYOUT_CATS.map(([k])=>{
+      const v = (c.ratings||{})[k] || 0;
+      return `<td style="text-align:center;${v?`color:${ratingColor(v)};font-weight:700`:'color:var(--text3)'}">${v||'—'}</td>`;
+    }).join('');
+    return `<tr onclick="openTryoutModal(${i})">
+      <td>
+        <div style="font-weight:700">${esc(c.name||'—')}</div>
+        ${c.riotId ? `<div style="font-size:11px;color:var(--text3)">${esc(c.riotId)}</div>` : ''}
+      </td>
+      <td style="font-size:12px;color:var(--text2)">${(c.roles||[]).map(esc).join(', ') || '—'}</td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;font-size:15px;${avg!==null?`color:${ratingColor(avg)}`:'color:var(--text3)'}">${avg!==null?avg.toFixed(1):'—'}</td>
+      <td><span class="status-badge" style="background:color-mix(in srgb, ${st.color} 15%, transparent);color:${st.color};border:1px solid color-mix(in srgb, ${st.color} 35%, transparent)">${st.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTryoutStars(){
+  document.getElementById('to-ratings').innerHTML = TRYOUT_CATS.map(([k,label])=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span style="font-size:13px;color:var(--text2)">${label}</span>
+      <span style="white-space:nowrap">
+        ${[1,2,3,4,5].map(n=>`<span class="star${(_tryoutRatings[k]||0)>=n?' on':''}" onclick="setTryoutStar('${k}',${n})">★</span>`).join('')}
+        <span class="star-clear" onclick="setTryoutStar('${k}',0)" title="Clear rating">✕</span>
+      </span>
+    </div>`).join('');
+}
+
+function setTryoutStar(k,n){
+  if(n===0) delete _tryoutRatings[k];
+  else _tryoutRatings[k] = n;
+  renderTryoutStars();
+}
+
+function openTryoutModal(idx=-1){
+  editTryoutIdx = idx;
+  const c = idx>=0 ? tryouts()[idx] : null;
+  document.getElementById('tryout-modal-title').textContent = c ? `Edit — ${c.name}` : 'Add Candidate';
+  document.getElementById('to-name').value   = c ? (c.name||'')   : '';
+  document.getElementById('to-riot').value   = c ? (c.riotId||'') : '';
+  document.getElementById('to-roles').value  = c ? (c.roles||[]).join(', ') : '';
+  document.getElementById('to-status').value = c ? (c.status||'active') : 'active';
+  document.getElementById('to-notes').value  = c ? (c.notes||'')  : '';
+  _tryoutRatings = Object.assign({}, (c && c.ratings) || {});
+  renderTryoutStars();
+  // Promote/Delete only apply to a saved candidate (and stay hidden entirely
+  // until the editor is unlocked — .edit-btn is display:none until then)
+  document.getElementById('to-promote-btn').style.display = c ? '' : 'none';
+  document.getElementById('to-delete-btn').style.display  = c ? '' : 'none';
+  document.getElementById('tryout-modal').classList.add('open');
+}
+
+function closeTryoutModal(){
+  document.getElementById('tryout-modal').classList.remove('open');
+}
+
+function saveTryout(){
+  const name = document.getElementById('to-name').value.trim();
+  if(!name){ toast('Enter a name first','var(--loss)'); return; }
+  const existing = editTryoutIdx>=0 ? tryouts()[editTryoutIdx] : null;
+  const entry = {
+    name,
+    riotId:  document.getElementById('to-riot').value.trim(),
+    roles:   document.getElementById('to-roles').value.split(',').map(r=>r.trim()).filter(Boolean),
+    status:  document.getElementById('to-status').value,
+    ratings: Object.assign({}, _tryoutRatings),
+    notes:   document.getElementById('to-notes').value.trim(),
+    added:   (existing && existing.added) || new Date().toISOString().slice(0,10),
+  };
+  if(existing) tryouts()[editTryoutIdx] = entry;
+  else tryouts().push(entry);
+  saveTeams();
+  closeTryoutModal();
+  renderTryouts();
+  toast('✓ Candidate saved');
+}
+
+function deleteTryout(){
+  const c = tryouts()[editTryoutIdx];
+  if(!c) return;
+  if(!confirm(`Delete ${c.name} from tryouts? This can't be undone.`)) return;
+  tryouts().splice(editTryoutIdx, 1);
+  saveTeams();
+  closeTryoutModal();
+  renderTryouts();
+  toast('Candidate deleted','var(--loss)');
+}
+
+// Moves a candidate onto the real roster (where they start showing up in the
+// scrim logger, player stats, etc.) and marks them Signed.
+function promoteTryout(){
+  const c = tryouts()[editTryoutIdx];
+  if(!c) return;
+  const t = activeTeam();
+  if(!confirm(`Add ${c.name} to the ${t.name} roster?`)) return;
+  if(!Array.isArray(t.players)) t.players = [];
+  if(t.players.some(p=>(p.name||'').toLowerCase() === c.name.toLowerCase())){
+    toast(`${c.name} is already on the roster`,'var(--warn)');
+  } else {
+    t.players.push({name:c.name, roles:(c.roles||[]).slice()});
+  }
+  c.status = 'signed';
+  saveTeams();
+  closeTryoutModal();
+  applyTeam();      // roster changed — refresh filters/branding everywhere
+  renderTryouts();
+  toast(`✓ ${c.name} added to the roster`);
+}
+
 function showPage(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -3277,6 +3549,7 @@ function showPage(page,btn){
   if(page==='scrims')renderScrims();
   if(page==='players')renderPlayers();
   if(page==='matchups')renderMatchups();
+  if(page==='tryouts')renderTryouts();
 }
 
 function renderAll(){
@@ -3290,6 +3563,7 @@ function renderAll(){
     if(id==='draft')renderDraft();
     if(id==='scrims')renderScrims();
     if(id==='players')renderPlayers();
+    if(id==='tryouts')renderTryouts();
   }
 }
 
