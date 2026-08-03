@@ -702,6 +702,8 @@ tbody td{padding:12px 14px;color:var(--text)}
       </div>
       <label class="form-label" style="display:block;margin:18px 0 4px">Evaluation</label>
       <div id="to-ratings"></div>
+      <label class="form-label" style="display:block;margin:18px 0 6px">Scrim Record</label>
+      <div id="to-scrim-record"></div>
       <div class="form-group" style="margin-top:16px">
         <label class="form-label">Notes</label>
         <textarea class="form-input" id="to-notes" style="min-height:100px;resize:vertical;font-size:13px;line-height:1.6" placeholder="Strengths, weaknesses, champion pool, VOD links..."></textarea>
@@ -3377,6 +3379,62 @@ function tryoutAvg(c){
 
 function ratingColor(v){ return v>=4 ? 'var(--win)' : v>=3 ? 'var(--warn)' : 'var(--loss)'; }
 
+// Pulls a candidate's real performance out of the captured scrim data so the
+// subjective ratings sit next to hard numbers. Matches on the Riot ID the
+// capture script records for every ally (osummoners) — which means a candidate
+// counts from their very first game, without being added to the roster or to
+// the script's hardcoded ROSTER first — and falls back to the display name for
+// games logged by hand.
+function tryoutScrimStats(c){
+  const nameLc   = (c.name||'').trim().toLowerCase();
+  const riotLc   = (c.riotId||'').trim().toLowerCase();
+  const riotBase = riotLc.split('#')[0];
+  const st = {games:0, wins:0, k:0, d:0, a:0, cs:0, mins:0, vision:0, kpSum:0, kpGames:0, log:[]};
+
+  vs().forEach(s=>{
+    ROLES.forEach(r=>{
+      const pname = String((s.players||{})[r] || '').trim().toLowerCase();
+      const psum  = String((s.osummoners||{})[r] || '').trim().toLowerCase();
+      const hit = (nameLc && pname && pname === nameLc)
+               || (riotLc && psum && psum === riotLc)
+               || (riotBase && psum && psum.split('#')[0] === riotBase);
+      if(!hit) return;
+
+      const kda = parseKDA((s.kda||{})[r]);
+      st.games++;
+      if(s.result === 'Win') st.wins++;
+      if(kda){ st.k += kda[0]; st.d += kda[1]; st.a += kda[2]; }
+
+      const cs   = Number((s.cs||{})[r]) || 0;
+      const mins = Number(s.durationMin) || 0;
+      const vis  = Number((s.vision||{})[r]) || 0;
+      st.cs += cs; st.mins += mins; st.vision += vis;
+
+      // Kill participation is only meaningful when every role's KDA was
+      // recorded. Partial data (legacy games, hand-entered rows) would divide
+      // by an undercounted team total and report impossible percentages, so
+      // those games are skipped for KP rather than silently skewing it.
+      const teamKdas = ROLES.map(rr => parseKDA((s.kda||{})[rr]));
+      if(kda && teamKdas.every(Boolean)){
+        const teamKills = teamKdas.reduce((sum,p)=>sum+p[0], 0);
+        if(teamKills > 0){
+          st.kpSum += Math.min(100, (kda[0]+kda[2]) / teamKills * 100);
+          st.kpGames++;
+        }
+      }
+
+      st.log.push({date:s.date, opponent:s.opponent, game:s.game, result:s.result,
+                   champ:(s[r]||''), role:r, kda:(s.kda||{})[r]||'', cs, mins, vision:vis});
+    });
+  });
+  return st;
+}
+
+function tryoutWR(st){ return st.games ? st.wins/st.games*100 : null; }
+function tryoutKDA(st){ return st.games ? (st.d===0 ? st.k+st.a : (st.k+st.a)/st.d) : null; }
+function tryoutCSMin(st){ return st.mins>0 ? st.cs/st.mins : null; }
+function tryoutKP(st){ return st.kpGames ? st.kpSum/st.kpGames : null; }
+
 function setTryoutSort(key){
   if(tryoutSort.key===key) tryoutSort.dir *= -1;
   else tryoutSort = {key, dir: key==='name' ? 1 : -1};
@@ -3391,18 +3449,24 @@ function renderTryouts(){
   const icon = k => tryoutSort.key===k ? (tryoutSort.dir<0 ? ' ↓' : ' ↑') : '';
   const sortableTh = (k,label,extra='') =>
     `<th style="cursor:pointer;user-select:none;${extra}" onclick="setTryoutSort('${k}')">${label}${icon(k)}</th>`;
+  // Left border marks where subjective ratings end and captured game data begins
+  const sep = 'border-left:1px solid var(--border);';
   head.innerHTML =
     sortableTh('name','Candidate') +
-    '<th style="width:110px">Roles</th>' +
+    '<th style="width:100px">Roles</th>' +
     TRYOUT_CATS.map(([k,,short])=>sortableTh(k,short,'text-align:center')).join('') +
     sortableTh('avg','Avg','text-align:center') +
-    '<th style="width:80px">Status</th>';
+    sortableTh('games','G','text-align:center;'+sep) +
+    sortableTh('wr','WR','text-align:center') +
+    sortableTh('kda','KDA','text-align:center') +
+    sortableTh('csmin','CS/m','text-align:center') +
+    '<th style="width:78px">Status</th>';
 
   const roleF   = document.getElementById('to-filter-role').value;
   const statusF = document.getElementById('to-filter-status').value;
   const q       = document.getElementById('to-search').value.trim().toLowerCase();
 
-  const list = tryouts().map((c,i)=>({c,i})).filter(({c})=>{
+  const list = tryouts().map((c,i)=>({c, i, st:tryoutScrimStats(c)})).filter(({c})=>{
     if(roleF && !(c.roles||[]).some(r=>r.toLowerCase()===roleF.toLowerCase())) return false;
     if(statusF && (c.status||'active')!==statusF) return false;
     if(q && !`${c.name||''} ${c.riotId||''}`.toLowerCase().includes(q)) return false;
@@ -3414,22 +3478,39 @@ function renderTryouts(){
       const va=(a.c.name||'').toLowerCase(), vb=(b.c.name||'').toLowerCase();
       return va<vb ? -tryoutSort.dir : va>vb ? tryoutSort.dir : 0;
     }
-    const val = c => tryoutSort.key==='avg'
-      ? (tryoutAvg(c) === null ? -1 : tryoutAvg(c))
-      : ((c.ratings||{})[tryoutSort.key] || 0);
-    return (val(a.c) - val(b.c)) * tryoutSort.dir;
+    // -1 keeps "no data" sorting below any real value in both directions
+    const val = ({c,st}) => {
+      switch(tryoutSort.key){
+        case 'avg':   return tryoutAvg(c) === null ? -1 : tryoutAvg(c);
+        case 'games': return st.games;
+        case 'wr':    return tryoutWR(st)    === null ? -1 : tryoutWR(st);
+        case 'kda':   return tryoutKDA(st)   === null ? -1 : tryoutKDA(st);
+        case 'csmin': return tryoutCSMin(st) === null ? -1 : tryoutCSMin(st);
+        default:      return (c.ratings||{})[tryoutSort.key] || 0;
+      }
+    };
+    return (val(a) - val(b)) * tryoutSort.dir;
   });
 
   document.getElementById('tryout-empty').style.display = list.length ? 'none' : 'block';
   document.getElementById('tryout-table').parentElement.parentElement.style.display = list.length ? '' : 'none';
 
-  tbody.innerHTML = list.map(({c,i})=>{
+  tbody.innerHTML = list.map(({c,i,st:gs})=>{
     const avg = tryoutAvg(c);
     const st  = TRYOUT_STATUS[c.status||'active'] || TRYOUT_STATUS.active;
     const cells = TRYOUT_CATS.map(([k])=>{
       const v = (c.ratings||{})[k] || 0;
       return `<td style="text-align:center;${v?`color:${ratingColor(v)};font-weight:700`:'color:var(--text3)'}">${v||'—'}</td>`;
     }).join('');
+
+    const wr = tryoutWR(gs), kd = tryoutKDA(gs), csm = tryoutCSMin(gs);
+    const dash = '<span style="color:var(--text3)">—</span>';
+    // CS/min is left uncoloured on purpose: a support's 1.5 isn't "bad"
+    const statCells =
+      `<td style="text-align:center;${sep}${gs.games?'font-weight:700':'color:var(--text3)'}">${gs.games||'—'}</td>` +
+      `<td style="text-align:center">${wr===null?dash:`<span style="font-weight:700;color:${wr>=60?'var(--win)':wr>=45?'var(--warn)':'var(--loss)'}">${Math.round(wr)}%</span>`}</td>` +
+      `<td style="text-align:center">${kd===null?dash:`<span style="font-weight:700;color:${kd>=3?'var(--win)':kd>=2?'var(--warn)':'var(--loss)'}">${kd.toFixed(1)}</span>`}</td>` +
+      `<td style="text-align:center;color:var(--text2)">${csm===null?dash:csm.toFixed(1)}</td>`;
     return `<tr onclick="openTryoutModal(${i})">
       <td>
         <div style="font-weight:700">${esc(c.name||'—')}</div>
@@ -3438,6 +3519,7 @@ function renderTryouts(){
       <td style="font-size:12px;color:var(--text2)">${(c.roles||[]).map(esc).join(', ') || '—'}</td>
       ${cells}
       <td style="text-align:center;font-weight:700;font-size:15px;${avg!==null?`color:${ratingColor(avg)}`:'color:var(--text3)'}">${avg!==null?avg.toFixed(1):'—'}</td>
+      ${statCells}
       <td><span class="status-badge" style="background:color-mix(in srgb, ${st.color} 15%, transparent);color:${st.color};border:1px solid color-mix(in srgb, ${st.color} 35%, transparent)">${st.label}</span></td>
     </tr>`;
   }).join('');
@@ -3460,6 +3542,46 @@ function setTryoutStar(k,n){
   renderTryoutStars();
 }
 
+function renderTryoutRecord(c){
+  const el = document.getElementById('to-scrim-record');
+  if(!el) return;
+  const hint = msg => `<div style="font-size:12px;color:var(--text3);padding:6px 0;line-height:1.5">${msg}</div>`;
+  if(!c){
+    el.innerHTML = hint('Save the candidate first — their games are matched automatically by Riot ID.');
+    return;
+  }
+  const st = tryoutScrimStats(c);
+  if(!st.games){
+    el.innerHTML = hint(c.riotId
+      ? `No scrim games found for <strong>${esc(c.riotId)}</strong> yet. Capture a scrim they played in and it'll show up here.`
+      : 'Add their <strong>Riot ID</strong> above so captured scrims can be matched to them.');
+    return;
+  }
+  const kd = tryoutKDA(st), csm = tryoutCSMin(st), kp = tryoutKP(st);
+  const stat = (label,val) => `<div style="text-align:center">
+      <div style="font-size:16px;font-weight:700">${val}</div>
+      <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">${label}</div>
+    </div>`;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px;background:var(--bg3);border-radius:8px;margin-bottom:10px">
+      ${stat('Games',  st.games)}
+      ${stat('Record', `${st.wins}-${st.games-st.wins}`)}
+      ${stat('KDA',    kd===null  ? '—' : kd.toFixed(1))}
+      ${stat('CS/m',   csm===null ? '—' : csm.toFixed(1))}
+      ${stat('KP',     kp===null  ? '—' : Math.round(kp)+'%')}
+    </div>
+    <div style="max-height:180px;overflow-y:auto"><table style="font-size:12px"><tbody>
+      ${st.log.slice().reverse().map(g=>`<tr style="cursor:default">
+        <td style="padding:5px 8px;color:var(--text3);white-space:nowrap">${esc(fmtDate(g.date))}</td>
+        <td style="padding:5px 8px;color:var(--text2)">${esc(g.opponent||'—')}</td>
+        <td style="padding:5px 8px">${esc(g.champ||'—')} <span style="color:var(--text3);font-size:10px;text-transform:uppercase">${esc(g.role)}</span></td>
+        <td style="padding:5px 8px;font-weight:700;color:${g.result==='Win'?'var(--win)':'var(--loss)'}">${g.result==='Win'?'W':'L'}</td>
+        <td style="padding:5px 8px;color:var(--text2)">${esc(g.kda||'—')}</td>
+        <td style="padding:5px 8px;color:var(--text3);white-space:nowrap">${g.cs?g.cs+' cs':''}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
 function openTryoutModal(idx=-1){
   editTryoutIdx = idx;
   const c = idx>=0 ? tryouts()[idx] : null;
@@ -3471,6 +3593,7 @@ function openTryoutModal(idx=-1){
   document.getElementById('to-notes').value  = c ? (c.notes||'')  : '';
   _tryoutRatings = Object.assign({}, (c && c.ratings) || {});
   renderTryoutStars();
+  renderTryoutRecord(c);
   // Promote/Delete only apply to a saved candidate (and stay hidden entirely
   // until the editor is unlocked — .edit-btn is display:none until then)
   document.getElementById('to-promote-btn').style.display = c ? '' : 'none';
