@@ -332,6 +332,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
     <button class="nav-btn" id="nav-tryouts-btn" onclick="showPage('tryouts',this)">Tryouts</button>
     <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
+    <a href="/ael-league.html" class="nav-btn" id="nav-ael-link" style="text-decoration:none">AEL League</a>
   </nav>
   <div class="header-search">
     <span class="search-icon">🔍</span>
@@ -1147,9 +1148,11 @@ function applyTeam(){
   const brand = `${esc(t.name)} <span>Scrims</span>`;
   const tt = document.getElementById('team-title'); if(tt) tt.innerHTML = brand;
 
-  // ADL League is Southern Jits-specific, not a general per-team feature
-  const adlLink = document.getElementById('nav-adl-link');
-  if(adlLink) adlLink.style.display = (t.row === 1) ? '' : 'none';
+  // ADL and AEL are Southern Jits' leagues, not general per-team features
+  ['nav-adl-link','nav-ael-link'].forEach(id=>{
+    const link = document.getElementById(id);
+    if(link) link.style.display = (t.row === 1) ? '' : 'none';
+  });
 
   // Tryouts is the inverse: Southern Jits has a settled roster and doesn't run
   // them, so the tab is hidden there and shown for every other team.
