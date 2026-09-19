@@ -330,7 +330,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     <button class="nav-btn" onclick="showPage('players',this)">Players</button>
     <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
     <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
-    <button class="nav-btn" onclick="showPage('tryouts',this)">Tryouts</button>
+    <button class="nav-btn" id="nav-tryouts-btn" onclick="showPage('tryouts',this)">Tryouts</button>
     <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
   </nav>
   <div class="header-search">
@@ -1150,6 +1150,20 @@ function applyTeam(){
   // ADL League is Southern Jits-specific, not a general per-team feature
   const adlLink = document.getElementById('nav-adl-link');
   if(adlLink) adlLink.style.display = (t.row === 1) ? '' : 'none';
+
+  // Tryouts is the inverse: Southern Jits has a settled roster and doesn't run
+  // them, so the tab is hidden there and shown for every other team.
+  const tryoutsBtn = document.getElementById('nav-tryouts-btn');
+  if(tryoutsBtn){
+    const hideTryouts = (t.row === 1);
+    tryoutsBtn.style.display = hideTryouts ? 'none' : '';
+    // Switching to Southern Jits while sitting on the Tryouts page would
+    // strand the user on a page whose tab just disappeared — send them home.
+    const onTryouts = document.getElementById('page-tryouts');
+    if(hideTryouts && onTryouts && onTryouts.classList.contains('active')){
+      showPage('dashboard', document.querySelector('.nav-btn[onclick*="dashboard"]'));
+    }
+  }
 
   // Accent color reskins buttons/badges/highlights everywhere via the CSS vars
   const accentHex = t.accent || '#e94560';
