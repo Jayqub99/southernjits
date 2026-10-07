@@ -3401,6 +3401,7 @@ async function refreshSoloQ(){
     status.innerHTML=`<div style="color:var(--loss);background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:8px;padding:16px 20px;text-align:center">
       <div style="font-size:16px;font-weight:700;margin-bottom:6px">⚠ API Key Invalid or Expired</div>
       <div style="font-size:13px;color:var(--text2)">Riot dev keys expire every 24 hours. Get a new one at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> and paste it under ⚙ Manage → Riot API Key (unlock editing with 🔒 first).</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">Riot said: ${esc(results.find(r=>!r.ok)?.error||'')} · key in use ends …${esc(key.slice(-6))}</div>
     </div>`;
     return;
   }
