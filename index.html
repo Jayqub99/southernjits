@@ -237,6 +237,7 @@ tbody td{padding:12px 14px;color:var(--text)}
 .notif-btn:hover{border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.08)}
 .lock-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;flex-shrink:0}
 .lock-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text);background:rgba(255,255,255,.08)}
+#lock-btn{width:auto;max-width:none}
 .notif-icon{font-size:18px;line-height:1;display:block}
 .notif-count{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:var(--font-u)}
 .notif-panel{display:none;position:fixed;top:76px;right:24px;width:420px;max-height:600px;background:var(--panel);border:1px solid var(--border);border-radius:10px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;flex-direction:column}
@@ -1750,7 +1751,7 @@ function renderAnalysis(){
     trendCard('Overall Win Rate',(wr*100).toFixed(1)+'%',`${wins}W — ${losses}L · ${total} games`,wr>=0.5?'var(--win)':wr>=0.4?'var(--gold)':'var(--loss)')+
     trendCard('Series Record',`${seriesW}W — ${seriesL}L`,`${sweeps} sweeps · ${splits} splits · ${revSplits} rev · ${swept} swept`,seriesW>=seriesL?'var(--win)':'var(--loss)')+
     trendCard('Current Streak',`${streak}× ${streakType==='Win'?'Win':'Loss'}`,streakType==='Win'?'On a winning run':'On a losing run',streakType==='Win'?'var(--win)':'var(--loss)')+
-    trendCard('Recent Form (L10)',`${last10W}W — ${10-last10W}L`,`${(last10W/10*100).toFixed(0)}% WR in last 10 games`,last10W>=6?'var(--win)':last10W>=4?'var(--gold)':'var(--loss)');
+    trendCard(`Recent Form (L${last10.length})`,`${last10W}W — ${last10.length-last10W}L`,`${last10.length?(last10W/last10.length*100).toFixed(0):0}% WR in last ${last10.length} games`,last10W/(last10.length||1)>=0.6?'var(--win)':last10W/(last10.length||1)>=0.4?'var(--gold)':'var(--loss)');
 
   // ── Recent form dots ──────────────────────────────────────────────────
   const formGames=scrims.slice(-15);
