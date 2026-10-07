@@ -425,11 +425,15 @@ tbody td{padding:12px 14px;color:var(--text)}
 <main>
   <div class="subnav" id="subnav"></div>
   <!-- DATA RANGE TOGGLE -->
-  <div id="data-range-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+  <div id="data-range-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Viewing:</span>
     <button id="dr-from" class="data-range-btn active" onclick="toggleDataRange(false)">Since May 4</button>
     <button id="dr-all" class="data-range-btn" onclick="toggleDataRange(true)">All Time</button>
     <select id="era-select" onchange="onEraSelect(this)" title="View an archived era" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.05em;padding:6px 10px;cursor:pointer;outline:none"></select>
+    <span style="flex:1"></span>
+    <select id="flt-opp" class="form-select" style="width:auto;padding:5px 10px;font-size:12px" onchange="setGameFilter('opp',this.value)" title="Only games against this opponent"></select>
+    <select id="flt-player" class="form-select" style="width:auto;padding:5px 10px;font-size:12px" onchange="setGameFilter('player',this.value)" title="Only games this person played"></select>
+    <button id="flt-clear" class="data-range-btn" style="display:none" onclick="clearGameFilters()">✕ Clear filters</button>
   </div>
   <div id="era-readonly-note" style="display:none;font-size:12px;color:var(--warn);margin-top:-12px;margin-bottom:20px">📦 Viewing an archived era — read only. Player filters and stats reflect that era's roster; Solo Queue always stays on the current roster.</div>
 
@@ -1315,7 +1319,40 @@ function normDate(d){
 // era's fixed [dateFrom, dateTo) window when viewing one, otherwise the
 // normal "Since X" / "All Time" toggle. Render functions use this instead of
 // the raw scrims array so both mechanisms work everywhere automatically.
+// Opponent/player filters from the Viewing bar, applied on every tab via vs()
+let gameFilter = {opp:'', player:''};
 function vs(){
+  let list = vsRange();
+  if(gameFilter.opp) list = list.filter(s=>(s.opponent||'').trim().toLowerCase()===gameFilter.opp);
+  if(gameFilter.player) list = list.filter(s=>s.players && ROLES.some(r=>(s.players[r]||'').toLowerCase()===gameFilter.player));
+  return list;
+}
+function setGameFilter(kind, val){
+  gameFilter[kind] = val;
+  renderGameFilters();
+  renderAll();
+  const cur = document.querySelector('.page.active')?.id.replace('page-','');
+  if(cur==='opponents') renderOpponents();
+  if(cur==='matchups') renderMatchups();
+}
+function emptyGamesMsg(){ return (gameFilter.opp||gameFilter.player) ? 'No scrims match these filters.' : 'No scrims in this date range.'; }
+function clearGameFilters(){ gameFilter = {opp:'', player:''}; setGameFilter('opp',''); }
+function renderGameFilters(){
+  const base = vsRange();
+  const opps = {}, people = {};
+  base.forEach(s=>{
+    const o=(s.opponent||'').trim(); if(o) opps[o.toLowerCase()] = o;
+    ROLES.forEach(r=>{ const p=(s.players?.[r]||'').trim(); if(p) people[p.toLowerCase()] = p; });
+  });
+  const opt = (map, cur, all) => `<option value="">${all}</option>` +
+    Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1])).map(([k,v])=>`<option value="${esc(k)}"${k===cur?' selected':''}>${esc(v)}</option>`).join('');
+  const o = document.getElementById('flt-opp'), p = document.getElementById('flt-player');
+  if(o) o.innerHTML = opt(opps, gameFilter.opp, 'All opponents');
+  if(p) p.innerHTML = opt(people, gameFilter.player, 'All players');
+  const c = document.getElementById('flt-clear');
+  if(c) c.style.display = (gameFilter.opp||gameFilter.player) ? '' : 'none';
+}
+function vsRange(){
   const era = viewingEraIdx!==null ? (activeTeam().eras||[])[viewingEraIdx] : null;
   if(era){
     return scrims.filter(s=>{
@@ -1430,9 +1467,10 @@ function renderDateRangeBar(){
     document.getElementById('dr-all').classList.toggle('active', showAllData);
     return;
   }
-  // No cutoff and no archived era selected — keep the bar around only if
-  // there are eras to pick from via the dropdown, else hide it entirely.
-  bar.style.display = (activeTeam().eras||[]).length ? 'flex' : 'none';
+  // No cutoff: no date toggle, but the bar stays for the era picker and filters
+  bar.style.display = 'flex';
+  document.getElementById('dr-from').style.display = 'none';
+  document.getElementById('dr-all').style.display = 'none';
 }
 
 function renderEraSelect(){
@@ -1542,6 +1580,7 @@ function switchTeam(row){
   activeTeamRow = row;
   try{ localStorage.setItem('sjs_active_team', String(row)); }catch(e){}
   _oppSel = null;
+  gameFilter = {opp:'', player:''};
   let cached = null;
   try{ cached = JSON.parse(localStorage.getItem(scrimCacheKey(row))||'null'); }catch(e){}
   scrims = Array.isArray(cached) ? cached : (row===1 ? SJ_SEED : []);
@@ -1910,7 +1949,7 @@ function renderOpponents(){
           </div>
           <div class="opp-champs" title="Their most-played champions">${top.map(([c])=>`<img class="champ-icon" src="${iconUrl(c)}" alt="${esc(c)}" title="${esc(c)}" onerror="this.style.display='none'">`).join('')}</div>
         </div>`;}).join('')}</div>`
-      : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">No scrims in this date range.</div>`);
+      : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`);
     return;
   }
   const info = opponentInfo(o.key);
@@ -1972,7 +2011,7 @@ function renderScrims(){
   if(!scrimSortAsc) grouped.reverse();
   const list = document.getElementById('series-list');
   list.innerHTML = grouped.length ? seriesCardsHtml(grouped)
-    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">No scrims in this date range.</div>`;
+    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`;
 }
 
 function seriesCardsHtml(grouped){
@@ -4193,6 +4232,7 @@ function showPage(page,btn){
 }
 
 function renderAll(){
+  renderGameFilters();
   renderDashboard();
   renderNotifs();
   updateDiscordBtn();
