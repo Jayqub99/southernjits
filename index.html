@@ -121,6 +121,11 @@ tbody td{padding:12px 14px;color:var(--text)}
 .champ-cell{display:flex;align-items:center;gap:7px}
 /* Scrim series cards: one card per opponent+date, one row per game */
 .series-list{display:flex;flex-direction:column;gap:14px}
+@media(max-width:640px){
+  .pcard-body{grid-template-columns:1fr!important}
+  .pcard-body > *{min-width:0}
+  .pcard-pool{border-right:none!important;border-bottom:1px solid var(--border)}
+}
 .opp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .opp-card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
 .opp-card:hover{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.15)}
@@ -1295,6 +1300,40 @@ function kdaColor(ratio){
   return '#e74c3c';
 }
 
+// Extra per-game stats only the capture script records (hand-logged games
+// don't have them): cs/vision/level per role for us, ecs/evision/ekda for
+// the enemy laner, and durationMin.
+function gameMins(s){ return Number(s.durationMin) || 0; }
+function statNum(map, r){ const v = map && map[r]; return (v===undefined || v===null || v==='') ? null : Number(v); }
+function fmtCsLine(cs, vis, mins){
+  const parts = [];
+  if(cs!==null) parts.push(`${cs} CS${mins>0?` · ${(cs/mins).toFixed(1)}/min`:''}`);
+  if(vis!==null) parts.push(`${vis} vis`);
+  return parts.join(' · ');
+}
+// Averages for one player's games: CS/min, vision per game, CS and KDA vs
+// their lane opponent. Each figure only counts games that have the data.
+function laneStats(games, isMine){
+  const st = {csSum:0, mins:0, visSum:0, visN:0, diffSum:0, diffN:0, kdaUs:[], kdaThem:[]};
+  games.forEach(s=>ROLES.forEach(r=>{
+    if(!isMine(s,r)) return;
+    const cs = statNum(s.cs,r), ecs = statNum(s.ecs,r), vis = statNum(s.vision,r), m = gameMins(s);
+    if(cs!==null && m>0){ st.csSum += cs; st.mins += m; }
+    if(vis!==null){ st.visSum += vis; st.visN++; }
+    if(cs!==null && ecs!==null){ st.diffSum += cs-ecs; st.diffN++; }
+    const a = kdaRatio(s.kda?.[r]), b = kdaRatio(s.ekda?.[r]);
+    if(a!==null && b!==null){ st.kdaUs.push(a); st.kdaThem.push(b); }
+  }));
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  return {
+    csMin: st.mins>0 ? st.csSum/st.mins : null,
+    vis: st.visN ? st.visSum/st.visN : null,
+    csDiff: st.diffN ? st.diffSum/st.diffN : null, diffN: st.diffN,
+    kdaUs: avg(st.kdaUs), kdaThem: avg(st.kdaThem), kdaN: st.kdaUs.length,
+  };
+}
+const signed = (v, d=0) => (v>0?'+':'') + v.toFixed(d);
+
 // ── DATA RANGE ────────────────────────────────────────────────────────────
 let DATA_FROM = '2026-05-04'; // per-team "core era" start — null means no cutoff
 let showAllData = false;
@@ -1966,6 +2005,7 @@ function renderOpponents(){
         <div style="align-self:end;justify-self:end"><button class="edit-btn" onclick="editOpponentInfo('${esc(o.key)}')">✎ Edit contact &amp; notes</button></div>
       </div>
     </div>
+    ${oppLanesHtml(o.games)}
     <div class="section-header"><span class="section-title">Their picks against us</span><div class="section-line"></div></div>
     <div class="card" style="margin-bottom:18px;display:flex;flex-wrap:wrap;gap:10px">
       ${champs.length ? champs.map(([c,v])=>`<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
@@ -1976,6 +2016,30 @@ function renderOpponents(){
     <div class="section-header"><span class="section-title">Series</span><div class="section-line"></div></div>
     <div class="series-list">${seriesCardsHtml(series)}</div>`;
 }
+// Per-role head-to-head from capture-script games: CS and KDA vs their laner
+function oppLanesHtml(games){
+  const names = {top:'Top',jng:'Jungle',mid:'Mid',adc:'ADC',sup:'Support'};
+  const rows = ROLES.map(r=>{
+    const ls = laneStats(games, (s,rr)=>rr===r);
+    const g = games.filter(s=>s[r]), w = g.filter(s=>s.result==='Win').length;
+    return {r, ls, g:g.length, w};
+  });
+  if(!rows.some(x=>x.ls.diffN || x.ls.kdaN)) return '';
+  return `<div class="section-header"><span class="section-title">Lanes vs them</span><div class="section-line"></div></div>
+    <div class="card" style="margin-bottom:18px"><div class="table-wrap"><table>
+      <thead><tr><th>Role</th><th>Games</th><th>Win rate</th><th title="Average CS difference vs their laner">CS vs them</th><th title="Average KDA ratio">Our KDA</th><th title="Average KDA ratio">Their KDA</th></tr></thead>
+      <tbody>${rows.map(({r,ls,g,w})=>`<tr>
+        <td style="font-weight:600">${names[r]}</td>
+        <td>${g}</td>
+        <td style="color:${g&&w/g>=.5?'var(--win)':'var(--loss)'}">${g?Math.round(w/g*100)+'%':'—'}</td>
+        <td style="font-weight:700;color:${ls.csDiff===null?'var(--text3)':ls.csDiff>=0?'var(--win)':'var(--loss)'}">${ls.csDiff===null?'—':signed(ls.csDiff)}</td>
+        <td style="color:${ls.kdaUs===null?'var(--text3)':kdaColor(ls.kdaUs)}">${ls.kdaUs===null?'—':ls.kdaUs.toFixed(2)}</td>
+        <td style="color:var(--text2)">${ls.kdaThem===null?'—':ls.kdaThem.toFixed(2)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:8px">CS and KDA comparisons use games logged by the capture script.</div></div>`;
+}
+
 function editOpponentInfo(key){
   const t = activeTeam();
   const cur = opponentInfo(key);
@@ -2010,21 +2074,21 @@ function renderScrims(){
 }
 
 function seriesCardsHtml(grouped){
-  const slot = (champ, player, kda) => `<div class="series-slot" title="${esc(champ||'')}${player?' — '+esc(player):''}">
+  const slot = (champ, player, kda, cs) => `<div class="series-slot" title="${esc(champ||'')}${player?' — '+esc(player):''}">
       ${champ ? champCell(champ) : '<span style="color:var(--text3);font-size:12px">—</span>'}
       ${player ? `<span class="player-tag">${esc(player)}</span>` : ''}
-      ${kda ? `<span style="font-size:11px;color:${kdaColor(kdaRatio(kda))};font-weight:700">${esc(kda)}</span>` : ''}
+      ${kda ? `<span style="font-size:11px;color:${kdaColor(kdaRatio(kda))};font-weight:700">${esc(kda)}${cs!==null&&cs!==undefined?` <span style="color:var(--text3);font-weight:400">· ${cs}cs</span>`:''}</span>` : ''}
     </div>`;
   const gameRow = s => {
     const idx = scrims.indexOf(s);
     return `<div class="series-game" onclick="openDetail(${idx})">
       <div class="series-game-label">
-        <span>${esc(s.game)}</span>
+        <span>${esc(s.game)}${gameMins(s)?` <span style="color:var(--text3);font-size:12px">· ${Math.round(gameMins(s))}m</span>`:''}</span>
         <span class="${s.result==='Win'?'badge-win':'badge-loss'}" style="align-self:flex-start">${s.result}</span>
       </div>
       <div class="series-picks-wrap">
-        <div class="series-picks">${ROLES.map(r=>slot(s[r], s.players?.[r], s.kda?.[r])).join('')}</div>
-        <div class="series-enemy">${['etop','ejng','emid','eadc','esup'].map((r,i)=>`<div class="series-slot">${s[r]?champCell(s[r]):'<span style="color:var(--text3);font-size:12px">—</span>'}${s.eplayers?.[ROLES[i]]?`<span class="player-tag" style="opacity:.7">${esc(s.eplayers[ROLES[i]])}</span>`:''}</div>`).join('')}</div>
+        <div class="series-picks">${ROLES.map(r=>slot(s[r], s.players?.[r], s.kda?.[r], statNum(s.cs,r))).join('')}</div>
+        <div class="series-enemy">${['etop','ejng','emid','eadc','esup'].map((r,i)=>`<div class="series-slot">${s[r]?champCell(s[r]):'<span style="color:var(--text3);font-size:12px">—</span>'}${s.eplayers?.[ROLES[i]]?`<span class="player-tag" style="opacity:.7">${esc(s.eplayers[ROLES[i]])}</span>`:''}${s.ekda?.[ROLES[i]]?`<span style="font-size:11px;color:var(--text3)">${esc(s.ekda[ROLES[i]])}${statNum(s.ecs,ROLES[i])!==null?` · ${statNum(s.ecs,ROLES[i])}cs`:''}</span>`:''}</div>`).join('')}</div>
       </div>
       <div onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></div>
       ${s.notes ? `<div class="series-notes" title="${esc(s.notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(s.notes)}</div>` : ''}
@@ -2383,6 +2447,15 @@ function renderPlayers(){
       }
     }));
     const champPool=Object.entries(pc).sort((a,b)=>b[1].g-a[1].g);
+    const ls = laneStats(pg, (s,r)=>kdaRoles.includes(r) && s.players && s.players[r]===p.name);
+    const statCell = (label, value, color, title) => `<div style="text-align:center" title="${title}">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">${label}</div>
+          <div style="font-family:var(--font-d);font-size:24px;font-weight:700;color:${color}">${value}</div>
+        </div>`;
+    const extraCells =
+      (ls.csMin!==null ? statCell('CS/min', ls.csMin.toFixed(1), 'var(--text)', 'From games logged by the capture script') : '') +
+      (ls.vis!==null ? statCell('Vision', ls.vis.toFixed(0), 'var(--text)', 'Average vision score per game (capture script games)') : '') +
+      (ls.csDiff!==null ? statCell('CS vs lane', signed(ls.csDiff), ls.csDiff>=0?'var(--win)':'var(--loss)', `Average CS difference against their lane opponent over ${ls.diffN} game${ls.diffN>1?'s':''}`) : '');
 
     // Role filter badge in header
     const roleFilterLabel = activeRoleFilter !== 'all'
@@ -2419,12 +2492,11 @@ function renderPlayers(){
 
     return`<div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px">
       <!-- Header -->
-      <div style="display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:24px;padding:20px 24px;border-bottom:1px solid var(--border)">
-        <div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:24px;padding:20px 24px;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:140px">
           <div style="font-family:var(--font-d);font-size:22px;font-weight:700">${p.name}</div>
           <div style="margin-top:4px">${roleFilterLabel}</div>
         </div>
-        <div></div>
         <div style="text-align:center">
           <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Record</div>
           <div style="font-family:var(--font-d);font-size:20px;font-weight:700;color:${wrColor}">${pw}W — ${pg.length-pw}L</div>
@@ -2437,11 +2509,12 @@ function renderPlayers(){
           <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Avg KDA</div>
           <div style="font-family:var(--font-d);font-size:24px;font-weight:700;color:${avgKDA?kdaColor(parseFloat(avgKDA)):'var(--text3)'}">${avgKDA||'—'}</div>
         </div>
+        ${extraCells}
       </div>
 
-      <div style="display:grid;grid-template-columns:220px 1fr">
+      <div class="pcard-body" style="display:grid;grid-template-columns:220px 1fr">
         <!-- Champ pool sidebar -->
-        <div style="border-right:1px solid var(--border);padding:16px 20px">
+        <div class="pcard-pool" style="border-right:1px solid var(--border);padding:16px 20px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Champion Pool</div>
           ${champPool.map(([c,s])=>{
             const cwr=s.g?s.w/s.g:0;
@@ -2500,6 +2573,7 @@ function openDetail(idx){
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
       <span class="${s.result==='Win'?'badge-win':'badge-loss'}" style="font-size:16px;padding:8px 24px">${s.result}</span>
       <span style="color:var(--text2);font-size:14px">${getComp(s)}</span>
+      ${gameMins(s)?`<span style="margin-left:auto;color:var(--text3);font-size:13px">${Math.floor(gameMins(s))}m ${Math.round((gameMins(s)%1)*60)}s</span>`:''}
     </div>
     <div class="detail-picks" style="background:var(--bg3);border-radius:8px;overflow:hidden;margin-bottom:16px">
       <div class="detail-team">
@@ -2510,6 +2584,7 @@ function openDetail(idx){
           <div style="text-align:right">
             ${s.players&&s.players[r]?`<div class="player-tag" style="font-size:13px">${esc(s.players[r])}</div>`:''}
             ${s.kda&&s.kda[r]?`<div class="detail-kda">${s.kda[r]}</div>`:'<div style="font-size:12px;color:var(--text3)">—</div>'}
+            ${fmtCsLine(statNum(s.cs,r), statNum(s.vision,r), gameMins(s)) ? `<div style="font-size:11px;color:var(--text3)">${fmtCsLine(statNum(s.cs,r), statNum(s.vision,r), gameMins(s))}</div>` : ''}
           </div>
         </div>`).join('')}
       </div>
@@ -2521,6 +2596,8 @@ function openDetail(idx){
           <div>${champCell(s[ekeys[r]])}</div>
           <div style="text-align:right">
             ${s.eplayers&&s.eplayers[r]?`<div class="player-tag" style="font-size:13px">${esc(s.eplayers[r])}</div>`:''}
+            ${s.ekda&&s.ekda[r]?`<div class="detail-kda">${esc(s.ekda[r])}</div>`:''}
+            ${fmtCsLine(statNum(s.ecs,r), statNum(s.evision,r), gameMins(s)) ? `<div style="font-size:11px;color:var(--text3)">${fmtCsLine(statNum(s.ecs,r), statNum(s.evision,r), gameMins(s))}</div>` : ''}
           </div>
         </div>`).join('')}
       </div>
