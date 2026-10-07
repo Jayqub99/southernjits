@@ -184,6 +184,7 @@ tr.danger{border-left:2px solid var(--loss)}
 .role-Middle{background:rgba(74,127,193,.15);color:#4a7fc1}
 .role-Bottom{background:rgba(201,162,39,.15);color:#c9a227}
 .role-Support{background:rgba(124,108,181,.15);color:#7c6cb5}
+.role-Sub{background:rgba(139,148,158,.15);color:#8b949e}
 .summoner-id{font-weight:600;color:var(--text)}
 .rank-txt{color:var(--text2);font-size:12px}
 .opgg-link{color:var(--accent);text-decoration:none;font-size:11px;font-weight:700;font-family:var(--font-d);letter-spacing:.04em;border:1px solid rgba(201,162,39,.3);padding:2px 8px;border-radius:4px;white-space:nowrap}
@@ -434,7 +435,7 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
 <div class="page" id="standings">
   <div id="standingsContainer"></div>
   <div style="margin-top:12px;padding:10px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text3)">
-    Group format, tiebreakers and advancement are announced at the group draw show.
+    Two groups of six. Week 6 seeding and decider matches are set from the final group standings; playoffs are Bo5 at 7pm ET.
   </div>
 </div>
 
@@ -460,8 +461,8 @@ a{color:var(--blue);text-decoration:none}.a:hover{text-decoration:underline}
 <div class="page" id="info">
   <div class="grid-3" style="margin-bottom:22px">
     <div class="card">
-      <div class="card-title">Prize Pool (est.)</div>
-      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">1st — 70%</span><span style="font-weight:700;color:var(--text)">$588 / $882 / $1,176</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">2nd — 30%</span><span style="font-weight:700;color:var(--text)">$252 / $378 / $504</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;"><span style="color:var(--text2)">Total pool</span><span style="font-weight:700;color:var(--text)">$840 / $1,260 / $1,680</span></div><div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5">Estimates for 16 / 24 / 32 teams. Exact amounts are announced once all fees are in, and paid to the team owner.</div>
+      <div class="card-title">Prize Pool</div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">1st</span><span style="font-weight:700;color:var(--text)">$450</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">2nd</span><span style="font-weight:700;color:var(--text)">$190</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Teams</span><span style="font-weight:700;color:var(--text)">12 (2 groups of 6)</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;"><span style="color:var(--text2)">Admin</span><span style="font-weight:700;color:var(--text)">Rucha</span></div><div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.8"><a href="https://bit.ly/Fall2026AegisCappedRulebook" target="_blank" style="color:var(--accent)">Rulebook ↗</a> · <a href="http://bit.ly/AegisBroadcastSchedule" target="_blank" style="color:var(--accent)">Stream schedule ↗</a> · <a href="https://lol.aegisesports.gg/" target="_blank" style="color:var(--accent)">Discord ↗</a></div>
     </div>
     <div class="card">
       <div class="card-title">Rules &amp; Format</div>
@@ -502,30 +503,242 @@ const SEASON = {
   admin: 'ael2026',   // change each split
   timeline: [
     { label: 'Application submitted', date: 'September 2026', status: 'done' },
-    { label: 'Group Draw Show — groups & schedule released', date: 'TBD', status: 'now' },
-    { label: 'Group Stage — Thursdays 8pm ET', date: 'TBD', status: 'next' },
+    { label: 'Group Draw Show — groups & schedule released', date: 'Done', status: 'done' },
+    { label: 'Week 1 — Group Stage Begins', date: 'October 8, 2026 · 8pm ET', status: 'now' },
+    { label: 'Week 2', date: 'October 15, 2026', status: 'next' },
+    { label: 'Week 3', date: 'October 22, 2026', status: 'next' },
+    { label: 'Week 4', date: 'October 29, 2026', status: 'next' },
+    { label: 'Week 5 — Group Stage Deadline', date: 'November 5, 2026', status: 'next' },
+    { label: 'Roster Freeze', date: 'November 11, 2026 @ 8pm ET', status: 'next' },
+    { label: 'Week 6 — Seeding & Decider', date: 'November 12, 2026', status: 'next' },
+    { label: 'Playoffs — Quarterfinals (Bo5)', date: 'November 19, 2026 @ 7pm ET', status: 'next' },
     { label: 'Thanksgiving — no games', date: 'November 26, 2026', status: 'next' },
-    { label: 'Roster Freeze', date: '24h before the last regular-season match', status: 'next' },
-    { label: 'Playoffs — Best of 5, 7pm ET', date: 'TBD', status: 'next' },
+    { label: 'Semifinals (Bo5)', date: 'December 3, 2026 @ 7pm ET', status: 'next' },
+    { label: 'Championship (Bo5)', date: 'December 10, 2026 @ 7pm ET', status: 'next' },
   ]
 };
 
 // ─── GROUPS ──────────────────────────────────────────────────────────────────
-// Filled in after the group draw show. Order here is display order.
+// Order here is display order.
 // { id, name, conf, color }   e.g. { id:'shadow', name:'Shadow Isles', conf:'Harrowing', color:'#8e7cc3' }
-const GROUPS = [];
+const GROUPS = [
+  { id:'solari', name:'Solari', conf:'', color:'#e8a33d' },
+  { id:'lunari', name:'Lunari', conf:'', color:'#8e7cc3' },
+];
 
 // ─── TEAMS ───────────────────────────────────────────────────────────────────
-// Same shape as the ADL page. Our own team's id must stay 'SJS' — the
-// Our Matches tab finds our games by it.
+// From the official sheet's Roster tab. Our own team's id must stay 'SJS' —
+// the Our Matches tab finds our games by it. Ids are internal keys; abbr is
+// the team's tag as listed on the sheet. rank is the sheet's rank lock.
+// Starters are Top→Support, then any subs with role 'Sub'.
 // SJS: { name:'Southern Jits', abbr:'SJS', group:'<group id>', gankster:'',
 //        roster:[{role:'Top', summoner:'Name#TAG', rank:'Diamond 3', opgg:''}, ...] },
-const TEAMS = {};
+const TEAMS = {
+  // Solari
+  SYNT: { name:'SYN Posted in the Trees', abbr:'SPST', group:'solari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Lanza#4th', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Lanza%234th%2Ctop+laner%234444%2Cjgler%234444%2Cmld%234444%2Cadcapc%234444%2Csupport%234444'},
+      {role:'Jungle', summoner:'guo#1303', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=guo%231303%2Cgu0%23na1'},
+      {role:'Middle', summoner:'ThunderMcBusterz#OBOL', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=ThunderMcBusterz%23OBOL%2CShadowsDemon%23NA1%2CMcLightning%23Fast%2C'},
+      {role:'Bottom', summoner:'Resílìent#CIV', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Res%C3%ADl%C3%ACent%23CIV%2CCivsz%23Resi%2CPTM+Res%C3%ADl%C3%ACent%23scrim%2CCivester%23Imisu%2CResiMana%23Supp%2CIamBoosted%23090%2CAnotherAcc%23Resi'},
+      {role:'Support', summoner:'Eden#1111', rank:'Diamond 4', opgg:''},
+      {role:'Sub', summoner:'i am insanity#na2', rank:'Diamond 3', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=i+am+insanity%23na2%2CI+am+insanity%232ezy%2Cccida%23na1%2Cinsanity%238507'},
+    ]},
+  XSVG: { name:'XSV Gluttony', abbr:'XSVG', group:'solari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Icy Rain#YWGI', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=Solar+Rain%23YWGI%2CZonizu%23scum%2CIcy+Rain%23YWGI'},
+      {role:'Jungle', summoner:'WellShowThemAll#NA1', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=WellShowThemAll%23NA1%2CRATIRL+TEST+1%23NA1%2CRatirl+Test+1%23XDD'},
+      {role:'Middle', summoner:'xBKP#NA1', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=xBKP%23NA1%2CDarnellyInPh%23NA1%2CEloTerroristBK%23NA1%2CIngiduglin%23NA1'},
+      {role:'Bottom', summoner:'Spaghetti#XSV', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Spaghetti%23XSV%2Cvedryel%23na1%2Celusive%239894%2CMatty%23JG1%2CFatkidzlag1RL%236031%2CCall+Me+Fatty%23NA1'},
+      {role:'Support', summoner:'Sore Emperor#1414', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=Sore+Emperor%231414%2Cflower%23yaz'},
+      {role:'Sub', summoner:'taylor swift#8WOOD', rank:'Emerald 2', opgg:'https://op.gg/lol/multisearch/na?summoners=taylor+swift%238wood%2Cmeerkatsayshi%23NA1'},
+    ]},
+  CUTT: { name:'Cut Teeth', abbr:'CUT', group:'solari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Fiora Simp#NA1', rank:'Emerald 1', opgg:'https://op.gg/da/lol/multisearch/na?summoners=credible+threat%23UHC%2Cfiora+simp%23NA1'},
+      {role:'Jungle', summoner:'ClancrusherDRS#NA1', rank:'Diamond 4', opgg:''},
+      {role:'Middle', summoner:'Gesture#홍재희', rank:'Emerald 2', opgg:'https://op.gg/lol/multisearch/na?summoners=Gesture%23홍재희%2CIIIIIIIIIIIII%237379%2CIIIIIIIIIIIII%233320%2CIIIIIIIIIIIII%230527'},
+      {role:'Bottom', summoner:'FatherGreebus#DAD', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=FatherGreebus%23dad%2CDHG+Father%23DHG'},
+      {role:'Support', summoner:'Quanzek#steez', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Quanzek%23steez%2CZugzwang%23ZUGZ'},
+      {role:'Sub', summoner:'Nazaara#NA1', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=Y%C3%BAchun3%23NA1%2C+Nazaara%23NA1%2C'},
+    ]},
+  SJS: { name:'Southern Jits', abbr:'JIT', group:'solari', gankster:'https://lol.gankster.gg/teams/8451/team-smegma-mid',
+    roster:[
+      {role:'Top', summoner:'Loaf of Ballsack#6130', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=Space%23Walk%2Cspacer%23188'},
+      {role:'Jungle', summoner:'The Popster#VIPER', rank:'Diamond 4', opgg:''},
+      {role:'Middle', summoner:'StarkillerNico#JIT', rank:'Diamond 4', opgg:''},
+      {role:'Bottom', summoner:'Jayqub#NA1', rank:'Diamond 3', opgg:''},
+      {role:'Support', summoner:'spacer#188', rank:'Diamond 3', opgg:''},
+      {role:'Sub', summoner:'Rachel Nichols#GOAT', rank:'Emerald 1', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=Rachel+Nichols%23GOAT%2CNichols%23NA1'},
+    ]},
+  CIT8: { name:'8th Citadel', abbr:'8C', group:'solari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Blessings#NA0', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=more+drugs%23fent%2Cblessings%23na0'},
+      {role:'Jungle', summoner:'CAN WIN#JG1', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=can+win%23jg1%2CFULLCLEAR+DELUXE%23JG1'},
+      {role:'Middle', summoner:'SonateNo23Appass#3824', rank:'Diamond 4', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=A005%23NA1%2CSonateNo23Appass%233824'},
+      {role:'Bottom', summoner:'Reep#lol', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=High+Jhintellect%23NA1%2CReep%23lol'},
+      {role:'Support', summoner:'TORA BRAESEL#TORA', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=TORA+BRAESEL%23TORA%2CReformedBraesel%23UwU'},
+      {role:'Sub', summoner:'STUDLY STEVE#NA1', rank:'Diamond 4', opgg:''},
+    ]},
+  SBIR: { name:'Strawberry Ira', abbr:'IRA', group:'solari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Zezz#Lzy', rank:'Diamond 4', opgg:''},
+      {role:'Jungle', summoner:'alvs2#wtf', rank:'Emerald 1', opgg:''},
+      {role:'Middle', summoner:'Shady#LL21', rank:'Diamond 4', opgg:''},
+      {role:'Bottom', summoner:'siegfried#ε ï з', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=moonfish%23%CE%B5+%C3%AF+%D0%B7%2C+siegfried%23%CE%B5+%C3%AF+%D0%B7%2C'},
+      {role:'Support', summoner:'J Young#NA1', rank:'Emerald 1', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=JYoung%23na1%2CJarrxd%23na1%2CTeep%23NA1'},
+    ]},
+  // Lunari
+  SYNS: { name:'SYN Squirtle Squad', abbr:'SYN', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Icarus#ish', rank:'Diamond 4', opgg:'https://op.gg/da/lol/multisearch/na?summoners=Icarus%23ish%2C0XPainX0%23NA1'},
+      {role:'Jungle', summoner:'BeeSW#Buzz', rank:'Emerald 1', opgg:'https://op.gg/da/lol/multisearch/na?summoners=BeeSW%23buzz%2Cnaidayas%238272'},
+      {role:'Middle', summoner:'Baher#Snafu', rank:'Emerald 2', opgg:''},
+      {role:'Bottom', summoner:'Cloudbry#NA2', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Cloudbry%23na2%2Cseadra%23misty%2Clopunnys+pimp%23misty'},
+      {role:'Support', summoner:'DShott#NA1', rank:'Emerald 1', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=DShott%23NA1%2C+PlasmaOryx%23NA1'},
+    ]},
+  TOEL: { name:'Theory of Everything Lagrange', abbr:'TEL', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'JPDABOSS#NA1', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=JPDABOSS%231830%2CJPDABOSS%23NA1%2CJPDABOSS%239040'},
+      {role:'Jungle', summoner:'ProtonPlatPlayer#NA1', rank:'Diamond 4', opgg:''},
+      {role:'Middle', summoner:'MelloDevils#NA1', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=MelloDevils%23na1%2Csktfaker100%23na1%2Cputmeonc9%231998'},
+      {role:'Bottom', summoner:'BussInPoots#Pham', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=bussinpoots%23pham%2Cbussinpoots%23poot'},
+      {role:'Support', summoner:'Squirtle#boss', rank:'Emerald 3', opgg:''},
+      {role:'Sub', summoner:'Kaxi#NA1', rank:'Emerald 2', opgg:'https://op.gg/lol/multisearch/na?summoners=Kaxi%23NA1%2CDarkChaosKaxi%23NA1%2CDarkChaosSage%23NA1%2CDarkChaosHope%23NA1'},
+    ]},
+  SYNF: { name:'Synflowers', abbr:'SYNF', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Fembop#Ego', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=Fembop%23ego%2C+bananasmoothie%23heart%2C+5+P1gs+one+team%23na1%2C'},
+      {role:'Jungle', summoner:'XSoccer25X#NA1', rank:'Emerald 1', opgg:''},
+      {role:'Middle', summoner:'Derisin#NA1', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=derisin%23na1%2CDragonwarhammer%23na1%2C+locketuah%23soul%2C'},
+      {role:'Bottom', summoner:'skoobs#5105', rank:'Diamond 3', opgg:'https://op.gg/da/lol/multisearch/na?summoners=skoobs%235105%2Cslim%23OK22%2C'},
+      {role:'Support', summoner:'Poodle25#NA1', rank:'Emerald 2', opgg:'https://op.gg/lol/multisearch/na?summoners=Poodle25%23NA1%2CVirginieLa974%236742'},
+      {role:'Sub', summoner:'JJisnice#NA1', rank:'Diamond 4', opgg:''},
+      {role:'Sub', summoner:'Malins#meow', rank:'Diamond 4', opgg:'https://op.gg/da/lol/multisearch/na?summoners=malins%23meow%2C+blask%23na1%2C+toxic+ego%23na1'},
+    ]},
+  SBDO: { name:'Strawberry Dolor', abbr:'DLOR', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Smoke#Jugg', rank:'Diamond 3', opgg:''},
+      {role:'Jungle', summoner:'Mikelasy#NA1', rank:'Diamond 3', opgg:''},
+      {role:'Middle', summoner:'Sinja#NA1', rank:'Diamond 4', opgg:''},
+      {role:'Bottom', summoner:'Juiiceboxx#NA1', rank:'Diamond 4', opgg:''},
+      {role:'Support', summoner:'Red v Blue#NA1', rank:'Diamond 4', opgg:''},
+    ]},
+  KHAN: { name:'Khan', abbr:'KHAN', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'vetin#lego', rank:'Emerald 3', opgg:'https://op.gg/lol/multisearch/na?summoners=vetin%23lego%2CAyala%23baae'},
+      {role:'Jungle', summoner:'Drackar#6969', rank:'Diamond 3', opgg:'https://op.gg/fr/lol/multisearch/na?summoners=Drackar%236969%2CSwagzix%23NA1'},
+      {role:'Middle', summoner:'RealPkerz#4382', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=RealPkerz%234382%2CPkerzTop%23111%2CRealPkerz%23NA1'},
+      {role:'Bottom', summoner:'defly#NA2', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=defly%23na1%2C+defly%23na2%2C+od1ss3us%23na1%2C+contaminatedrat%23na1%2C+miriamcrkr%23na1%2C+skycarver%23edge%2C+deefly%23na1%2C'},
+      {role:'Support', summoner:'Shibbs#Once', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=shibbs%23once%2C+deadge+inside%23rip%2C+jung+4+fun%23na1%2C+fed+adc%23na1%2C+shibblett%23na1%2C'},
+    ]},
+  DGIO: { name:'Dorado Gaming Iota', abbr:'DOGI', group:'lunari', gankster:'',
+    roster:[
+      {role:'Top', summoner:'Cally G#NA1', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=CallyG%23NA1%2CTOPBLACKMAN%23NA1%2CRurashan%23NA1'},
+      {role:'Jungle', summoner:'CJLopez#2010', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=DrFrontShotsMD%23DRFS%2CCJLopez%232010'},
+      {role:'Middle', summoner:'Zedd#FAKER', rank:'Diamond 4', opgg:'https://op.gg/lol/multisearch/na?summoners=Zedd%23FAKER%2CFETTUCINEALFREDO%23CREAM%2CTeddySetGo%23TIBRS'},
+      {role:'Bottom', summoner:'Spiritless#Jinx', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=spiritless%23jinx%2Cacorn%23nutz'},
+      {role:'Support', summoner:'Gremlin#7725', rank:'Emerald 1', opgg:'https://op.gg/lol/multisearch/na?summoners=Gremlin%237725%2CSprigg%23Slay%2CDracoSpark%23NA1'},
+      {role:'Sub', summoner:'Tsukí#NA1', rank:'Diamond 3', opgg:''},
+      {role:'Sub', summoner:'Yengu#faith', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=yengu%23faith%2Cdarren+watkins%23jrr'},
+      {role:'Sub', summoner:'bubble#BKe', rank:'Diamond 3', opgg:'https://op.gg/lol/multisearch/na?summoners=bubble%23BKe%2Cleolegrossac%23na2%2Cjg+gap%23sigh'},
+    ]},
+};
 
 // ─── SCHEDULE ────────────────────────────────────────────────────────────────
 // Each week: { week, label, date, matches:[{ id, blue, red, tcode, draft }] }
 // bye: { id, bye:true, team }
-const SCHEDULE = [];
+const SCHEDULE = [
+  {
+    week: 1, label: 'Week 1', date: 'Oct 8 – Oct 14, 2026 · Thu 8:00pm ET',
+    matches: [
+      { id:'W1-SO-1', blue:'SJS',  red:'XSVG', tcode:'NA050fd-c4d1d44d-39ea-495e-a184-95884904f097', draft:'RfE5WoFr' },
+      { id:'W1-SO-2', blue:'CUTT', red:'SBIR', tcode:'NA050fd-fbc35e9b-02b1-4f7d-b9e5-8d9b3875d6d8', draft:'ARVbPMcX' },
+      { id:'W1-SO-3', blue:'CIT8', red:'SYNT', tcode:'NA050fd-764b753c-124a-4a88-95be-d27d6ae5d199', draft:'f34s4WPp' },
+      { id:'W1-LU-1', blue:'DGIO', red:'KHAN', tcode:'NA050fd-8d7f6780-8130-4a9a-aaf7-a74abb41fd59', draft:'01gBQBQ6' },
+      { id:'W1-LU-2', blue:'SYNF', red:'SYNS', tcode:'NA050fd-fe737c16-e68d-44f9-8843-7f9366f779b7', draft:'DFoRNcmr' },
+      { id:'W1-LU-3', blue:'SBDO', red:'TOEL', tcode:'NA050fd-3d14dce0-abe7-40db-aa66-cbc5c6342c9a', draft:'8NZqOLBR' },
+    ]
+  },
+  {
+    week: 2, label: 'Week 2', date: 'Oct 15 – Oct 21, 2026 · Thu 8:00pm ET',
+    matches: [
+      { id:'W2-SO-1', blue:'SYNT', red:'CUTT', tcode:'NA050fd-2d0812b4-e507-41b5-9bd8-b40e3bb43529' },
+      { id:'W2-SO-2', blue:'CIT8', red:'SJS',  tcode:'NA050fd-41e2c472-442f-4f2f-97fc-b3af4e919069' },
+      { id:'W2-SO-3', blue:'XSVG', red:'SBIR', tcode:'NA050fd-144f54ec-2f22-466d-b44e-f22691c25ba9' },
+      { id:'W2-LU-1', blue:'SYNF', red:'SBDO', tcode:'NA050fd-9813eccf-0da5-4dd6-a0f1-3535a69b2e68' },
+      { id:'W2-LU-2', blue:'SYNS', red:'DGIO', tcode:'NA050fd-efa9ec30-787d-4f18-ada3-ed80ebd2c200' },
+      { id:'W2-LU-3', blue:'TOEL', red:'KHAN', tcode:'NA050fd-3ed42c00-1c58-4205-922f-984744451f89' },
+    ]
+  },
+  {
+    week: 3, label: 'Week 3', date: 'Oct 22 – Oct 28, 2026 · Thu 8:00pm ET',
+    matches: [
+      { id:'W3-SO-1', blue:'CUTT', red:'XSVG', tcode:'NA050fd-bcc12b9a-b526-4765-b4ae-e3bc0b573aac' },
+      { id:'W3-SO-2', blue:'SBIR', red:'CIT8', tcode:'NA050fd-c6882d88-c840-4d5f-aa4e-a50d2a299a69' },
+      { id:'W3-SO-3', blue:'SJS',  red:'SYNT', tcode:'NA050fd-d8d4d564-d8b3-4b0f-900f-32347b545d96' },
+      { id:'W3-LU-1', blue:'SBDO', red:'SYNS', tcode:'NA050fd-e866dbae-6d45-4dfe-9462-7f205c87d5e0' },
+      { id:'W3-LU-2', blue:'KHAN', red:'SYNF', tcode:'NA050fd-fff698fd-5b21-4e54-8544-2adc4fbb47e7' },
+      { id:'W3-LU-3', blue:'DGIO', red:'TOEL', tcode:'NA050fd-62bcd70e-3092-46e6-b974-7ab0c13901f7' },
+    ]
+  },
+  {
+    week: 4, label: 'Week 4', date: 'Oct 29 – Nov 4, 2026 · Thu 8:00pm ET',
+    matches: [
+      { id:'W4-SO-1', blue:'CIT8', red:'XSVG', tcode:'NA050fd-a390fe27-5cca-4da6-bcb7-976c5efb06e8' },
+      { id:'W4-SO-2', blue:'SYNT', red:'SBIR', tcode:'NA050fd-02dc5c73-3c97-40d4-85ba-a8b5fa685335' },
+      { id:'W4-SO-3', blue:'SJS',  red:'CUTT', tcode:'NA050fd-e142bb30-c3e4-46df-922a-b20a83c431b4' },
+      { id:'W4-LU-1', blue:'SYNS', red:'KHAN', tcode:'NA050fd-8950237e-fafd-49a5-a5e0-ee4eae5f7d28' },
+      { id:'W4-LU-2', blue:'SYNF', red:'TOEL', tcode:'NA050fd-92adc1f3-be7b-4388-b5f5-819a571b94cb' },
+      { id:'W4-LU-3', blue:'SBDO', red:'DGIO', tcode:'NA050fd-81d089c9-970e-4e8b-ba00-cf0bcf4a93d6' },
+    ]
+  },
+  {
+    week: 5, label: 'Week 5', date: 'Nov 5 – Nov 11, 2026 · Thu 8:00pm ET',
+    deadline: 'All group stage matches played by Nov 5',
+    matches: [
+      { id:'W5-SO-1', blue:'XSVG', red:'SYNT', tcode:'NA050fd-e11effb6-3c2f-480d-a5e6-d7eaf804222f' },
+      { id:'W5-SO-2', blue:'SBIR', red:'SJS',  tcode:'NA050fd-bcebefad-2d1c-4f53-a684-6f1372fef0e1' },
+      { id:'W5-SO-3', blue:'CUTT', red:'CIT8', tcode:'NA050fd-e61ecba9-3c26-42b2-8b87-6261886d1132' },
+      { id:'W5-LU-1', blue:'KHAN', red:'SBDO', tcode:'NA050fd-9f7423bb-f8cc-4b01-af42-1bb7bcab0b0d' },
+      { id:'W5-LU-2', blue:'DGIO', red:'SYNF', tcode:'NA050fd-f0824222-548a-4d5f-abb1-c1ba16eb8cf7' },
+      { id:'W5-LU-3', blue:'TOEL', red:'SYNS', tcode:'NA050fd-f619663b-2a2f-4223-b36c-b1b257da6fec' },
+    ]
+  },
+  {
+    week: 6, label: 'Week 6 — Seeding & Decider', date: 'Nov 12 – Nov 18, 2026 · Thu 8:00pm ET',
+    freeze: 'Roster Freeze: Nov 11 @ 8pm ET',
+    matches: [
+      { id:'W6-S1', blue:'TBD', red:'TBD', label:'Seeding Match 1 (standings-dependent)', tcode:'NA050fd-892665e1-96b1-43f4-b50c-b2f2620b0c75' },
+      { id:'W6-S2', blue:'TBD', red:'TBD', label:'Seeding Match 2 (standings-dependent)', tcode:'NA050fd-f54ac5c2-3e66-469f-9ea0-99d83b0ebe22' },
+      { id:'W6-S3', blue:'TBD', red:'TBD', label:'Seeding Match 3 (standings-dependent)', tcode:'NA050fd-0f0bc606-b1c0-4078-9410-70ba79151a40' },
+      { id:'W6-D1', blue:'TBD', red:'TBD', label:'Decider Match 1 (standings-dependent)', tcode:'NA050fd-48eaef70-96f0-49f4-8b16-574dadbfce9a' },
+      { id:'W6-D2', blue:'TBD', red:'TBD', label:'Decider Match 2 (standings-dependent)', tcode:'NA050fd-9477b993-7672-4e80-b2a3-11988e97029b' },
+    ]
+  },
+  {
+    week: 7, label: 'Playoffs — Quarterfinals', date: 'Nov 19 – Nov 23, 2026 · Thu 7:00pm ET · Bo5',
+    matches: [
+      { id:'P-QF1', blue:'TBD', red:'TBD', label:'Quarterfinal 1 (seed-dependent)', tcode:'NA050fd-37f5cfe6-bd8f-4ef4-9d84-fd6064321ffa' },
+      { id:'P-QF2', blue:'TBD', red:'TBD', label:'Quarterfinal 2 (seed-dependent)', tcode:'NA050fd-c2d982c4-0c1a-46c2-a4e8-e02b4dcddfe2' },
+      { id:'P-QF3', blue:'TBD', red:'TBD', label:'Quarterfinal 3 (seed-dependent)', tcode:'NA050fd-bdcacb06-cb34-49c4-ac15-8cfb1cf50b08' },
+      { id:'P-QF4', blue:'TBD', red:'TBD', label:'Quarterfinal 4 (seed-dependent)', tcode:'NA050fd-cc3d0fb9-8b3b-4e40-b213-2ad29a94e57a' },
+    ]
+  },
+  {
+    week: 8, label: 'Playoffs — Semifinals', date: 'Dec 3 – Dec 7, 2026 · Thu 7:00pm ET · Bo5',
+    matches: [
+      { id:'P-SF1', blue:'TBD', red:'TBD', label:'Semifinal 1', tcode:'NA050fd-1766596a-26a4-4b8c-a067-b86286e37e13' },
+      { id:'P-SF2', blue:'TBD', red:'TBD', label:'Semifinal 2', tcode:'NA050fd-8aed0480-1047-4cea-9477-16c5784320c3' },
+    ]
+  },
+  {
+    week: 9, label: 'Playoffs — Championship', date: 'Dec 10, 2026 · Thu 7:00pm ET · Bo5',
+    matches: [
+      { id:'P-F', blue:'TBD', red:'TBD', label:'Championship', tcode:'NA050fd-eaaa5031-1681-4093-a590-22902184c0a9' },
+    ]
+  },
+];
 
 // ─── CHAMPIONS ───────────────────────────────────────────────────────────────
 const CHAMPS = ["Aatrox","Ahri","Akali","Akshan","Alistar","Ambessa","Amumu","Anivia","Annie","Aphelios","Ashe","Aurelion Sol","Aurora","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum","Briar","Caitlyn","Camille","Cassiopeia","Cho'Gath","Corki","Darius","Diana","Dr. Mundo","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen","Hecarim","Heimerdinger","Hwei","Illaoi","Irelia","Ivern","Janna","Jarvan IV","Jax","Jayce","Jhin","Jinx","K'Sante","Kai'Sa","Kalista","Karma","Karthus","Kassadin","Katarina","Kayle","Kayn","Kennen","Kha'Zix","Kindred","Kled","Kog'Maw","LeBlanc","Lee Sin","Leona","Lillia","Lissandra","Lucian","Lulu","Lux","Malphite","Malzahar","Maokai","Master Yi","Mel","Milio","Miss Fortune","Mordekaiser","Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko","Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona","Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara","Yuumi","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"].sort();
@@ -655,7 +868,7 @@ function renderStandingsGroup(group, containerId, compact=false) {
           const qualify = i<2 ? 'qualify' : i>=rows.length-1 ? 'danger' : '';
           return `<tr class="${qualify}" onclick="showPage('schedule',null);filterSchedule('${group}',document.querySelector('.filt[data-g=${group}]'))">
             <td class="r"><span class="${posClass}">${i+1}</span></td>
-            <td class="team-name-cell">${TEAMS[r.id]?.name||r.id}<span class="team-abbr-cell">[${r.id}]</span></td>
+            <td class="team-name-cell">${TEAMS[r.id]?.name||r.id}<span class="team-abbr-cell">[${TEAMS[r.id]?.abbr||r.id}]</span></td>
             <td class="r" style="color:var(--win);font-weight:700">${r.mw}</td>
             <td class="r" style="color:var(--loss)">${r.ml}</td>
             ${compact?'':`<td class="r">${r.gw}</td><td class="r">${r.gl}</td><td class="r"><span class="${gdClass}">${gd>=0?'+':''}${gd}</span></td>`}
@@ -844,13 +1057,13 @@ function openTeamModal(teamId) {
     <div class="team-modal-hex" style="background:${color}22;color:${color};border:2px solid ${color}55">${t.abbr}</div>
     <div class="team-modal-info">
       <div class="team-modal-name">${t.name}</div>
-      <div class="team-modal-sub" style="color:${color}">${groupDisplayName(t.group)} · ${confName(t.group)} · ${mw}W ${ml}L</div>
+      <div class="team-modal-sub" style="color:${color}">${[groupDisplayName(t.group), confName(t.group), `${mw}W ${ml}L`].filter(Boolean).join(' · ')}</div>
     </div>`;
 
   const roster = t.roster || [];
   document.getElementById('teamModalBody').innerHTML = `
     <table class="roster-table">
-      <thead><tr><th>Role</th><th>Summoner</th><th>Peak Rank</th><th>OP.GG</th></tr></thead>
+      <thead><tr><th>Role</th><th>Summoner</th><th>Rank Lock</th><th>OP.GG</th></tr></thead>
       <tbody>${roster.map(p=>`
         <tr>
           <td><span class="role-badge role-${p.role}">${p.role}</span></td>
@@ -861,12 +1074,14 @@ function openTeamModal(teamId) {
       </tbody>
     </table>`;
 
-  // Build team-level OP.GG from all summoner mains that have individual links
-  const teamOpgg = buildTeamOpgg(roster);
+  // Team-level OP.GG multisearch of the five starters
+  const starters = roster.filter(p=>p.role!=='Sub');
+  const subs = roster.length - starters.length;
+  const teamOpgg = buildTeamOpgg(starters);
   document.getElementById('teamModalFooter').innerHTML = `
     ${teamOpgg?`<a href="${teamOpgg}" target="_blank" class="btn-sm btn-draft" style="background:var(--accent-dim);color:var(--accent);border-color:rgba(201,162,39,.4)">View All on OP.GG ↗</a>`:''}
     ${t.gankster?`<a href="${t.gankster}" target="_blank" class="btn-sm btn-draft">Gankster ↗</a>`:''}
-    <span style="margin-left:auto;font-size:11px;color:var(--text3)">${roster.length} starters</span>`;
+    <span style="margin-left:auto;font-size:11px;color:var(--text3)">${starters.length} starters${subs?` · ${subs} sub${subs>1?'s':''}`:''}</span>`;
 
   document.getElementById('teamModal').classList.add('open');
 }
@@ -891,13 +1106,13 @@ function renderTeams(filter='all') {
   c.innerHTML = entries.map(([id,t]) => {
     const {mw,ml} = calcTeamRecord(id);
     const color = groupColor(t.group);
-    const hasOpgg = t.roster && t.roster.some(p=>p.opgg);
+    const hasOpgg = t.roster && t.roster.length > 0;
     return `<div class="team-card" onclick="openTeamModal('${id}')">
       <div class="team-card-top">
         <div class="team-hex" style="background:${color}22;color:${color};border:1px solid ${color}44">${t.abbr}</div>
         <div>
           <div class="team-card-name">${t.name}</div>
-          <div class="team-card-sub" style="color:${color}">${groupDisplayName(t.group)} · ${confName(t.group)}</div>
+          <div class="team-card-sub" style="color:${color}">${[groupDisplayName(t.group), confName(t.group)].filter(Boolean).join(' · ')}</div>
         </div>
       </div>
       <div class="team-record-row">
