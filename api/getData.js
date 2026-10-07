@@ -3,7 +3,7 @@ module.exports = async function handler(req, res) {
   const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
   // Optional ?row=N selects which data row to read (1 = legacy Southern Jits
-  // scrims, 3 = ADL league data, 9 = teams registry, 10+ = additional team
+  // scrims, 3 = ADL / 4 = AEL league data, 9 = teams registry, 10+ = additional team
   // scrim data). Row 2 is config and served by getConfig instead.
   const row = parseInt((req.query || {}).row) || 1;
   if (row < 1 || row === 2) {

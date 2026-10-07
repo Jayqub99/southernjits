@@ -33,12 +33,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-u);font-size:
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(var(--accent-rgb),0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0}
 
 /* HEADER */
-header{position:sticky;top:0;z-index:200;background:rgba(10,10,15,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+header{position:sticky;top:0;z-index:200;background:rgba(10,10,15,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 32px 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;row-gap:6px;column-gap:16px}
+header .logo{margin-right:auto}
 .logo{display:flex;align-items:center;gap:12px;flex-shrink:0}
 .logo-hex{width:36px;height:36px;background:var(--accent);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:900}
 .logo-text{font-family:var(--font-d);font-size:20px;font-weight:700;letter-spacing:.04em}
 .logo-text span{color:var(--accent)}
-nav{display:flex;gap:4px}
+nav{display:flex;gap:4px;align-items:center;order:10;flex:1 1 100%;margin:0 -10px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav .nav-btn{white-space:nowrap;flex-shrink:0;border-radius:6px 6px 0 0;border-bottom:2px solid transparent}
+nav .nav-btn.active{border-bottom-color:var(--accent)}
+.nav-dd{position:relative}
+.nav-dd-menu{display:none;position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;min-width:160px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.nav-dd.open .nav-dd-menu{display:block}
+.nav-dd-menu a{display:block;padding:8px 12px;border-radius:5px;color:var(--text2);text-decoration:none;font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.nav-dd-menu a:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.subnav{display:none;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
+.subnav.show{display:flex}
+body.on-manage #data-range-bar{display:none!important}
+.subnav-btn{background:none;border:1px solid transparent;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:6px;cursor:pointer}
+.subnav-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.subnav-btn.active{color:var(--accent);border-color:rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.08)}
 .nav-btn{background:none;border:none;color:var(--text2);font-family:var(--font-u);font-size:14px;font-weight:600;letter-spacing:.08em;padding:9px 18px;cursor:pointer;border-radius:6px;transition:all .2s;text-transform:uppercase}
 .nav-btn:hover{color:var(--text);background:var(--panel)}
 .nav-btn.active{color:var(--accent);background:rgba(var(--accent-rgb),0.1)}
@@ -48,6 +63,7 @@ nav{display:flex;gap:4px}
 .header-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-u);font-size:14px;padding:9px 14px 9px 36px;outline:none;transition:border-color .2s}
 .header-search input:focus{border-color:var(--accent)}
 .header-search input::placeholder{color:var(--text3)}
+@media(max-width:1180px) and (min-width:769px){.header-search{flex-basis:180px}}
 .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
 .log-btn{background:var(--accent);color:#fff;border:none;font-family:var(--font-u);font-size:14px;font-weight:700;letter-spacing:.1em;padding:10px 22px;cursor:pointer;border-radius:6px;text-transform:uppercase;transition:all .2s;flex-shrink:0}
 .log-btn:hover{background:var(--accent-hover);box-shadow:0 0 20px rgba(var(--accent-rgb),.4)}
@@ -103,6 +119,51 @@ tbody td{padding:12px 14px;color:var(--text)}
 
 /* CHAMP CELL */
 .champ-cell{display:flex;align-items:center;gap:7px}
+/* Scrim series cards: one card per opponent+date, one row per game */
+.series-list{display:flex;flex-direction:column;gap:14px}
+.opp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.opp-card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
+.opp-card:hover{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.15)}
+.opp-card.s-win{border-left-color:var(--win)}.opp-card.s-loss{border-left-color:var(--loss)}.opp-card.s-even{border-left-color:var(--gold)}
+.opp-name{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text)}
+.opp-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.opp-rec{display:flex;gap:18px;margin-top:12px}
+.opp-rec b{display:block;font-family:var(--font-d);font-size:20px}
+.opp-rec span{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.opp-champs{display:flex;gap:4px;margin-top:12px}
+.opp-champs .champ-icon{width:26px;height:26px}
+.series-card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;overflow:hidden}
+.series-card.s-win{border-left-color:var(--win)}
+.series-card.s-loss{border-left-color:var(--loss)}
+.series-card.s-even{border-left-color:var(--gold)}
+.series-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.series-opp{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text)}
+.series-date{font-size:13px;color:var(--text3)}
+.series-score{margin-left:auto;font-family:var(--font-d);font-size:15px;font-weight:800;letter-spacing:.04em;padding:4px 12px;border-radius:6px}
+.s-win .series-score{color:var(--win);background:rgba(39,174,96,.12)}
+.s-loss .series-score{color:var(--loss);background:rgba(231,76,60,.12)}
+.s-even .series-score{color:var(--gold);background:rgba(243,156,18,.12)}
+.series-game{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:start;padding:12px 18px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04)}
+.series-game:last-child{border-bottom:none}
+.series-game:hover{background:rgba(255,255,255,.02)}
+.series-game-label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)}
+.series-picks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.series-slot{display:flex;flex-direction:column;gap:2px;min-width:0}
+.series-slot .champ-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.series-enemy{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.06)}
+.series-enemy .champ-icon{width:22px;height:22px;opacity:.85}
+.series-enemy .champ-name{font-size:12px;color:var(--text3)}
+.series-notes{grid-column:2 / -1;font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.series-notes.open{white-space:normal}
+@media(max-width:640px){
+  .series-game{grid-template-columns:1fr auto;padding:12px}
+  .series-game-label{flex-direction:row;align-items:center;grid-column:1}
+  .series-picks-wrap{grid-column:1 / -1;grid-row:2}
+  .series-notes{grid-column:1 / -1}
+  .series-slot .champ-cell{flex-direction:column;align-items:flex-start;gap:2px}
+  .series-slot .champ-name,.series-enemy .champ-name{font-size:11px;max-width:100%}
+  .series-head{padding:12px}
+}
 .champ-icon{width:32px;height:32px;border-radius:6px;object-fit:cover;border:1px solid var(--border);background:var(--bg3);flex-shrink:0}
 .champ-name{font-size:13px}
 
@@ -235,8 +296,9 @@ tbody td{padding:12px 14px;color:var(--text)}
 /* TOAST */
 .notif-btn{position:relative;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;transition:all .2s;flex-shrink:0}
 .notif-btn:hover{border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.08)}
-.lock-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;flex-shrink:0}
-.lock-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text);background:rgba(255,255,255,.08)}
+#lock-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;flex-shrink:0}
+#lock-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text);background:rgba(255,255,255,.08)}
+#lock-btn{width:auto;max-width:none}
 .notif-icon{font-size:18px;line-height:1;display:block}
 .notif-count{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:var(--font-u)}
 .notif-panel{display:none;position:fixed;top:76px;right:24px;width:420px;max-height:600px;background:var(--panel);border:1px solid var(--border);border-radius:10px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;flex-direction:column}
@@ -265,10 +327,10 @@ tbody td{padding:12px 14px;color:var(--text)}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 
 @media(max-width:768px){
-  header{padding:0 16px;flex-wrap:wrap;height:auto;min-height:60px;padding-top:10px;padding-bottom:10px;gap:10px}
+  header{padding:10px 16px 0;gap:10px}
   .header-search{flex:1 1 100%;order:3}
   .logo-text{font-size:17px}
-  nav{gap:2px}
+  nav{gap:2px;margin:0 -6px}
   .nav-btn{padding:7px 10px;font-size:12px}
   main{padding:16px}
   .grid-2{grid-template-columns:1fr}
@@ -283,8 +345,9 @@ tbody td{padding:12px 14px;color:var(--text)}
   .player-grid{grid-template-columns:1fr}
 }
 @media(max-width:480px){
-  header{padding:0 10px;padding-top:8px;padding-bottom:8px}
+  header{padding:8px 10px 0}
   .logo-text{font-size:15px}
+  #team-select{max-width:130px}
   .nav-btn{font-size:11px;padding:6px 8px}
   main{padding:10px}
   .grid-3{grid-template-columns:1fr}
@@ -324,22 +387,23 @@ tbody td{padding:12px 14px;color:var(--text)}
     <select id="team-select" onchange="onTeamSelect(this)" title="Switch team"></select>
   </div>
   <nav>
-    <button class="nav-btn active" onclick="showPage('dashboard',this)">Dashboard</button>
-    <button class="nav-btn" onclick="showPage('scrims',this)">Scrims</button>
-    <button class="nav-btn" onclick="showPage('analysis',this)">Analysis & Draft</button>
-    <button class="nav-btn" onclick="showPage('players',this)">Players</button>
-    <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
-    <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
-    <button class="nav-btn" id="nav-tryouts-btn" onclick="showPage('tryouts',this)">Tryouts</button>
-    <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
-    <a href="/ael-league.html" class="nav-btn" id="nav-ael-link" style="text-decoration:none">AEL League</a>
+    <button class="nav-btn active" id="nav-dashboard" onclick="showPage('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" id="nav-scrims" onclick="showPage('scrims',this)">Scrims</button>
+    <button class="nav-btn" id="nav-draft" onclick="showPage('analysis',this)">Draft</button>
+    <button class="nav-btn" id="nav-players" onclick="showPage('players',this)">Players</button>
+    <div class="nav-dd" id="nav-leagues">
+      <button class="nav-btn" onclick="toggleNavMenu(event)">Leagues ▾</button>
+      <div class="nav-dd-menu">
+        <a href="/adl-league.html" id="nav-adl-link">ADL League</a>
+        <a href="/ael-league.html" id="nav-ael-link">AEL League</a>
+      </div>
+    </div>
+    <button class="nav-btn" id="nav-manage" onclick="showPage('manage',this)" style="display:none" title="Team settings, People, API key, Discord">⚙ Manage</button>
   </nav>
   <div class="header-search">
     <span class="search-icon">🔍</span>
     <input type="text" id="global-search" placeholder="Search scrims, champs, players..." oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
   </div>
-  <button id="import-btn-el" style="display:none;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" onclick="openImportModal()">Import Data</button>
-  <button id="export-btn-el" style="display:none;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" onclick="exportData()">Export Data</button>
   <button class="notif-btn" id="notif-btn" onclick="toggleNotifs()" title="Data issues" style="display:none">
     <span class="notif-icon">🔔</span>
     <span class="notif-count" id="notif-count" style="display:none">0</span>
@@ -359,12 +423,17 @@ tbody td{padding:12px 14px;color:var(--text)}
 </div>
 
 <main>
+  <div class="subnav" id="subnav"></div>
   <!-- DATA RANGE TOGGLE -->
-  <div id="data-range-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+  <div id="data-range-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Viewing:</span>
     <button id="dr-from" class="data-range-btn active" onclick="toggleDataRange(false)">Since May 4</button>
     <button id="dr-all" class="data-range-btn" onclick="toggleDataRange(true)">All Time</button>
     <select id="era-select" onchange="onEraSelect(this)" title="View an archived era" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.05em;padding:6px 10px;cursor:pointer;outline:none"></select>
+    <span style="flex:1"></span>
+    <select id="flt-opp" class="form-select" style="width:auto;padding:5px 10px;font-size:12px" onchange="setGameFilter('opp',this.value)" title="Only games against this opponent"></select>
+    <select id="flt-player" class="form-select" style="width:auto;padding:5px 10px;font-size:12px" onchange="setGameFilter('player',this.value)" title="Only games this person played"></select>
+    <button id="flt-clear" class="data-range-btn" style="display:none" onclick="clearGameFilters()">✕ Clear filters</button>
   </div>
   <div id="era-readonly-note" style="display:none;font-size:12px;color:var(--warn);margin-top:-12px;margin-bottom:20px">📦 Viewing an archived era — read only. Player filters and stats reflect that era's roster; Solo Queue always stays on the current roster.</div>
 
@@ -376,10 +445,7 @@ tbody td{padding:12px 14px;color:var(--text)}
       <div class="section-line"></div>
       <span class="filter-badge" id="clear-filter" style="display:none" onclick="clearFilter()">✕ Clear Filter</span>
     </div>
-    <div class="card"><div class="table-wrap"><table id="dashboard-table">
-      <thead><tr><th>Date</th><th>Opponent</th><th>Game</th><th>Result</th><th>Top</th><th>Jng</th><th>Mid</th><th>ADC</th><th>Sup</th></tr></thead>
-      <tbody></tbody>
-    </table></div></div>
+    <div id="dashboard-series" class="series-list"></div>
   </div>
 
   <!-- SCRIMS -->
@@ -389,10 +455,15 @@ tbody td{padding:12px 14px;color:var(--text)}
       <div class="section-line"></div>
       <button id="discord-post-btn" onclick="postLatestToDiscord()" style="display:none;background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.4);color:#7289da;font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0">📢 Post to Discord</button>
     </div>
-    <div class="card"><div class="table-wrap"><table id="all-table">
-      <thead><tr><th style="cursor:pointer;user-select:none;width:100px" onclick="toggleDateSort()" id="date-th">Date <span id="date-sort-icon">↓</span></th><th style="width:120px">Opponent</th><th style="width:70px">Game</th><th style="width:70px">Result</th><th colspan="5" style="min-width:600px">Champions &amp; Players</th><th>Notes</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table></div></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="data-range-btn" onclick="toggleDateSort()"><span id="date-sort-label">Newest first</span> <span id="date-sort-icon">↓</span></button>
+    </div>
+    <div id="series-list" class="series-list"></div>
+  </div>
+
+  <!-- OPPONENTS -->
+  <div id="page-opponents" class="page">
+    <div id="opponents-body"></div>
   </div>
 
   <!-- ANALYSIS & DRAFT (combined) -->
@@ -495,24 +566,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     </div>
     <div id="player-grid"></div>
 
-    <!-- RIOT IDs -->
-    <div id="riot-id-section" style="margin-top:28px;display:none">
-      <div class="section-header"><span class="section-title">Riot IDs</span><div class="section-line"></div></div>
-      <div class="card" style="margin-top:12px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;letter-spacing:.04em">Changes save automatically and persist between sessions.</div>
-        <div id="riot-id-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
-      </div>
 
-      <!-- Discord Webhook -->
-      <div class="section-header" style="margin-top:24px"><span class="section-title">Discord Webhook</span><div class="section-line"></div></div>
-      <div class="card" style="margin-top:12px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Paste your Discord channel webhook URL to enable posting scrim results. Get it from your server's channel settings → Integrations → Webhooks.</div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <input id="discord-webhook-input" type="text" class="form-input" placeholder="https://discord.com/api/webhooks/..." style="flex:1;font-size:13px" oninput="saveDiscordWebhook()">
-          <span id="discord-webhook-status" style="font-size:12px;color:var(--win);display:none">✓ Saved</span>
-        </div>
-      </div>
-    </div>
 
   </div>
   <div id="page-soloq" class="page">
@@ -522,8 +576,6 @@ tbody td{padding:12px 14px;color:var(--text)}
       <button onclick="refreshSoloQ()" id="soloq-refresh-btn" style="background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.3);color:var(--accent);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0">↻ Refresh All</button>
     </div>
 
-    <!-- API key loaded automatically from Supabase -->
-    <input type="hidden" id="soloq-api-key">
 
     <div id="soloq-status" style="display:none;padding:16px;color:var(--text2);font-size:14px;text-align:center"></div>
     <div class="player-grid" id="soloq-grid"></div>
@@ -551,6 +603,52 @@ tbody td{padding:12px 14px;color:var(--text)}
     </div>
     <div id="matchup-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
     <div id="matchup-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:14px">No matchup notes yet. Add the first one!</div>
+  </div>
+
+  <!-- MANAGE (editor unlocked only) -->
+  <div id="page-manage" class="page">
+    <div class="section-header"><span class="section-title">Team</span><div class="section-line"></div></div>
+    <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px;font-size:13px;color:var(--text2)" id="manage-team-summary"></div>
+      <button type="button" class="edit-btn" onclick="openRosterEditor()">✎ Roster, Logo &amp; Password</button>
+    </div>
+    <div class="section-header" style="margin-top:24px"><span class="section-title">Data</span><div class="section-line"></div></div>
+    <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px;font-size:13px;color:var(--text2)">Back up this team's scrims to a file, or load scrims from one.</div>
+      <button type="button" class="edit-btn" onclick="openImportModal()">Import Data</button>
+      <button type="button" class="edit-btn" onclick="exportData()">Export Data</button>
+    </div>
+    <div style="margin-top:24px">
+    <!-- RIOT IDs -->
+      <div id="riot-id-section" style="display:none">
+        <div class="section-header"><span class="section-title">People &amp; Riot IDs</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px;letter-spacing:.04em">Riot IDs live in People — one list for every team, with as many accounts per person as you need.</div>
+          <div id="riot-id-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+        </div>
+  
+        <!-- Riot API key -->
+        <div class="section-header" style="margin-top:24px"><span class="section-title">Riot API Key</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Solo Queue needs this. Riot development keys expire 24 hours after you make them — get a fresh one at <a href="https://developer.riotgames.com" target="_blank" rel="noopener" style="color:var(--accent)">developer.riotgames.com</a> and paste it here. A personal or production key from Riot doesn't expire.</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input id="soloq-api-key" type="password" class="form-input" placeholder="RGAPI-..." style="flex:1;min-width:220px;font-size:13px" autocomplete="off">
+            <button type="button" class="edit-btn" onclick="const i=document.getElementById('soloq-api-key');i.type=i.type==='password'?'text':'password'">Show</button>
+            <button type="button" class="edit-btn" onclick="saveApiKey()">Save &amp; Test</button>
+          </div>
+        </div>
+  
+        <!-- Discord Webhook -->
+        <div class="section-header" style="margin-top:24px"><span class="section-title">Discord Webhook</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Paste your Discord channel webhook URL to enable posting scrim results. Get it from your server's channel settings → Integrations → Webhooks.</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input id="discord-webhook-input" type="text" class="form-input" placeholder="https://discord.com/api/webhooks/..." style="flex:1;font-size:13px" oninput="saveDiscordWebhook()">
+            <span id="discord-webhook-status" style="font-size:12px;color:var(--win);display:none">✓ Saved</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TRYOUTS -->
@@ -670,11 +768,37 @@ tbody td{padding:12px 14px;color:var(--text)}
       </div>
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
         <button type="button" class="edit-btn" style="width:100%" onclick="archiveEraAndReset()">📦 Archive Current Roster as Era &amp; Start Fresh</button>
-        <div style="font-size:12px;color:var(--text2);margin-top:6px">Saves the roster/date-range below the textarea as a named past era (viewable later via the Viewing dropdown), then clears the form so you can type the new roster.</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Saves the current roster and date range as a named past era (viewable later via the Viewing dropdown), then unticks everyone so you can pick the new roster.</div>
       </div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:10px">One player per line — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">Name: Role1, Role2</code> (roles optional)</p>
-      <textarea id="roster-text" class="form-input" style="width:100%;min-height:180px;resize:vertical;font-family:monospace;font-size:13px;line-height:1.6" placeholder="Aaron: Top, Mid&#10;Elisha: Jng"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <span style="font-size:13px;color:var(--text2)">Tick who's on the roster. Everyone else stays in People.</span>
+        <button type="button" class="edit-btn" style="flex-shrink:0" onclick="openPeopleModal()">👥 People…</button>
+      </div>
+      <input type="text" id="roster-filter" class="form-input" style="width:100%;margin-bottom:8px" placeholder="Filter people…" oninput="renderRosterChecklist()">
+      <div id="roster-checklist" style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto"></div>
       <button class="lock-btn" style="margin-top:14px;width:100%" onclick="saveRoster()">Save Roster</button>
+    </div>
+  </div>
+</div>
+
+<!-- PEOPLE MODAL -->
+<div class="modal-overlay" id="people-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div class="modal-title">People</div>
+      <button class="modal-close" aria-label="Close" onclick="closePeopleModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Everyone who plays for or with your teams. Add each person once, with all their Riot IDs; the ★ account is the one Solo Queue shows.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="people-filter" class="form-input" style="flex:1" placeholder="Search people or Riot IDs…" oninput="renderPeopleList()">
+        <button type="button" class="edit-btn" style="flex-shrink:0" onclick="addPersonDraft()">＋ Add person</button>
+      </div>
+      <div id="people-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="edit-btn" onclick="closePeopleModal()">Cancel</button>
+      <button class="lock-btn" style="width:auto;max-width:none;padding:8px 20px" onclick="savePeople()">Save People</button>
     </div>
   </div>
 </div>
@@ -827,12 +951,21 @@ tbody td{padding:12px 14px;color:var(--text)}
 
 <script>
 // ── CONSTANTS ─────────────────────────────────────────────────────────────
-const CHAMPS = ["Aatrox","Ahri","Akali","Akshan","Alistar","Ambessa","Amumu","Anivia","Annie","Aphelios","Ashe","Aurelion Sol","Aurora","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum","Briar","Caitlyn","Camille","Cassiopeia","Cho'Gath","Corki","Darius","Diana","Dr. Mundo","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen","Hecarim","Heimerdinger","Hwei","Illaoi","Irelia","Ivern","Janna","Jarvan IV","Jax","Jayce","Jhin","Jinx","K'Sante","Kai'Sa","Kalista","Karma","Karthus","Kassadin","Katarina","Kayle","Kayn","Kennen","Kha'Zix","Kindred","Kled","Kog'Maw","LeBlanc","Lee Sin","Leona","Lillia","Lissandra","Lucian","Lulu","Lux","Malphite","Malzahar","Maokai","Master Yi","Mel","Milio","Miss Fortune","Mordekaiser","Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko","Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona","Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara","Yuumi","Zaahen","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"].sort();
+const CHAMPS = ["Aatrox","Ahri","Akali","Akshan","Alistar","Ambessa","Amumu","Anivia","Annie","Aphelios","Ashe","Aurelion Sol","Aurora","Azir","Bard","Bel'Veth","Blitzcrank","Brand","Braum","Briar","Caitlyn","Camille","Cassiopeia","Cho'Gath","Corki","Darius","Diana","Dr. Mundo","Draven","Ekko","Elise","Evelynn","Ezreal","Fiddlesticks","Fiora","Fizz","Galio","Gangplank","Garen","Gnar","Gragas","Graves","Gwen","Hecarim","Heimerdinger","Hwei","Illaoi","Irelia","Ivern","Janna","Jarvan IV","Jax","Jayce","Jhin","Jinx","K'Sante","Kai'Sa","Kalista","Karma","Karthus","Kassadin","Katarina","Kayle","Kayn","Kennen","Kha'Zix","Kindred","Kled","Kog'Maw","LeBlanc","Lee Sin","Leona","Lillia","Lissandra","Locke","Lucian","Lulu","Lux","Malphite","Malzahar","Maokai","Master Yi","Mel","Milio","Miss Fortune","Mordekaiser","Morgana","Naafiri","Nami","Nasus","Nautilus","Neeko","Nidalee","Nilah","Nocturne","Nunu & Willump","Olaf","Orianna","Ornn","Pantheon","Poppy","Pyke","Qiyana","Quinn","Rakan","Rammus","Rek'Sai","Rell","Renata Glasc","Renekton","Rengar","Riven","Rumble","Ryze","Samira","Sejuani","Senna","Seraphine","Sett","Shaco","Shen","Shyvana","Singed","Sion","Sivir","Skarner","Smolder","Sona","Soraka","Swain","Sylas","Syndra","Tahm Kench","Taliyah","Talon","Taric","Teemo","Thresh","Tristana","Trundle","Tryndamere","Twisted Fate","Twitch","Udyr","Urgot","Varus","Vayne","Veigar","Vel'Koz","Vex","Vi","Viego","Viktor","Vladimir","Volibear","Warwick","Wukong","Xayah","Xerath","Xin Zhao","Yasuo","Yone","Yorick","Yunara","Yuumi","Zaahen","Zac","Zed","Zeri","Ziggs","Zilean","Zoe","Zyra"].sort();
 
 const ICON_MAP = {"Bel'Veth":"Belveth","Cho'Gath":"Chogath","Dr. Mundo":"DrMundo","Jarvan IV":"JarvanIV","Kai'Sa":"Kaisa","Kha'Zix":"Khazix","Kog'Maw":"KogMaw","K'Sante":"KSante","LeBlanc":"Leblanc","Lee Sin":"LeeSin","Miss Fortune":"MissFortune","Nunu & Willump":"Nunu","Rek'Sai":"RekSai","Renata Glasc":"Renata","Tahm Kench":"TahmKench","Twisted Fate":"TwistedFate","Vel'Koz":"Velkoz","Xin Zhao":"XinZhao","Aurelion Sol":"AurelionSol","Master Yi":"MasterYi","Wukong":"MonkeyKing","Ambessa":"Ambessa","Yunara":"Yunara","FiddleSticks":"Fiddlesticks"};
-const DDV = "16.9.1";
+let DDV = "16.9.1";
+// Art comes from the newest Data Dragon patch so newly released champions
+// (e.g. Locke, patch 26.13) have icons; the pinned version is only a fallback.
+try{ const _v=localStorage.getItem('sjs_ddv'); if(_v) DDV = _v; }catch(e){}
+fetch('https://ddragon.leagueoflegends.com/api/versions.json').then(r=>r.json()).then(vs=>{
+  const v = Array.isArray(vs) && vs[0]; if(!v || v === DDV) return;
+  const old = DDV; DDV = v;
+  try{ localStorage.setItem('sjs_ddv', v); }catch(e){}
+  document.querySelectorAll(`img[src*="/cdn/${old}/"]`).forEach(img=>{ img.style.display=''; img.src = img.src.replace(`/cdn/${old}/`, `/cdn/${v}/`); });
+}).catch(()=>{});
 function iconUrl(n){const k=ICON_MAP[n]||n.replace(/[^a-zA-Z]/g,'');return`https://ddragon.leagueoflegends.com/cdn/${DDV}/img/champion/${k}.png`;}
-function champCell(n){if(!n)return'';return`<div class="champ-cell"><img class="champ-icon" src="${iconUrl(n)}" alt="${n}" onerror="this.src='';this.style.display='none'"><span class="champ-name">${n}</span></div>`;}
+function champCell(n){if(!n)return'';return`<div class="champ-cell"><img class="champ-icon" src="${iconUrl(n)}" alt="${n}" onerror="this.style.display='none'"><span class="champ-name">${n}</span></div>`;}
 
 // PLAYERS / PLAYER_NAMES are per-team — reassigned by applyTeam() on switch.
 let PLAYERS = [
@@ -852,11 +985,59 @@ let PLAYER_NAMES = PLAYERS.map(p=>p.name);
 let TEAMS = [
   {row:1, name:'Southern Jits', dataFrom:'2026-05-04', players:PLAYERS, accent:'#e94560', password:'southerngooners'},
 ];
-try{ const _t=JSON.parse(localStorage.getItem('sjs_teams')||'null'); if(Array.isArray(_t)&&_t.length) TEAMS=_t; }catch(e){}
+// True once TEAMS holds something real (this browser's cache or the server),
+// not just the defaults above — only then may it be pushed to an empty server.
+let _teamsFromCache = false;
+try{ const _t=JSON.parse(localStorage.getItem('sjs_teams')||'null'); if(Array.isArray(_t)&&_t.length){ TEAMS=_t; _teamsFromCache=true; } }catch(e){}
 let activeTeamRow = parseInt(localStorage.getItem('sjs_active_team')||'1');
 if(!TEAMS.find(t=>t.row===activeTeamRow)) activeTeamRow = TEAMS[0].row;
 
 function activeTeam(){ return TEAMS.find(t=>t.row===activeTeamRow) || TEAMS[0]; }
+
+// ── PEOPLE ────────────────────────────────────────────────────────────────
+// Everyone who plays for or with any team (rosters, subs, past players,
+// tryouts), shared across teams and saved with TEAMS in registry row 9.
+// Each person keeps all their Riot accounts; accounts[0] is their main.
+// Rosters (team.players) still store names, so scrims and stats are unchanged.
+let PEOPLE = [];
+try{ const _p=JSON.parse(localStorage.getItem('sjs_people')||'null'); if(Array.isArray(_p)) PEOPLE=_p; }catch(e){}
+let _registryLoaded = false; // only sync people to the server once row 9 has been read
+function personByName(n){ const k=(n||'').trim().toLowerCase(); return k ? PEOPLE.find(p=>p.name.toLowerCase()===k) : undefined; }
+function parseRiotId(str){ const m=(str||'').trim().match(/^(.+?)\s*#\s*([^#\s]+)$/); return m ? {name:m[1].trim(), tag:m[2].trim()} : null; }
+function riotIdStr(a){ return a ? `${a.name}#${a.tag}` : ''; }
+function sameAccount(a,b){ return a.name.toLowerCase()===b.name.toLowerCase() && a.tag.toLowerCase()===b.tag.toLowerCase(); }
+// Adds a person (or merges roles/accounts into the existing one with that name).
+function upsertPerson(name, roles, accounts){
+  name = (name||'').trim();
+  if(!name) return null;
+  let p = personByName(name);
+  if(!p){ p = {id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, roles:[], accounts:[]}; PEOPLE.push(p); }
+  (roles||[]).forEach(r=>{ if(r && !p.roles.some(x=>x.toLowerCase()===r.toLowerCase())) p.roles.push(r); });
+  (accounts||[]).forEach(a=>{ if(a && a.name && a.tag && !p.accounts.some(x=>sameAccount(x,a))) p.accounts.push({name:a.name, tag:a.tag}); });
+  return p;
+}
+// Makes sure every name on a roster, past era or tryout list has a person,
+// and carries over Riot IDs saved the old way (one per name, config row 2).
+// Returns true if anything was added.
+function syncPeople(){
+  const before = JSON.stringify(PEOPLE);
+  const ids = getRiotIds();
+  TEAMS.forEach(t=>{
+    (t.players||[]).forEach(p=>upsertPerson(p.name, p.roles));
+    (t.eras||[]).forEach(e=>(e.players||[]).forEach(p=>upsertPerson(p.name, p.roles)));
+    (t.tryouts||[]).forEach(c=>upsertPerson(c.name, c.roles, [parseRiotId(c.riotId)]));
+  });
+  Object.entries(ids).forEach(([name,v])=>{
+    if(v && v.summoner && v.tag) upsertPerson(name, [], [{name:v.summoner, tag:v.tag}]);
+  });
+  return JSON.stringify(PEOPLE) !== before;
+}
+function syncPeopleAndSave(){
+  if(syncPeople()){
+    try{ localStorage.setItem('sjs_people', JSON.stringify(PEOPLE)); }catch(e){}
+    if(_registryLoaded) saveTeams();
+  }
+}
 function scrimCacheKey(row){ return row===1 ? 'sjs_v3' : `sjs_v3_r${row}`; }
 
 // Generated fallback logo (colored square + initials) for teams that haven't
@@ -938,7 +1119,7 @@ const IDENTITY_MAP = {
 
   // ── DIVE (Divers + burst assassins that jump the backline) ────────────────
   "Akali":"Dive","Ambessa":"Dive","Diana":"Dive","Ekko":"Dive",
-  "Elise":"Dive","Evelynn":"Dive","Kassadin":"Dive","Kled":"Dive",
+  "Elise":"Dive","Evelynn":"Dive","Kassadin":"Dive","Kled":"Dive","Locke":"Dive",
   "Naafiri":"Dive","Nocturne":"Dive","Pantheon":"Dive","Shyvana":"Dive",
   "Vi":"Dive","Volibear":"Dive","Xin Zhao":"Dive",
 
@@ -1021,31 +1202,51 @@ async function loadFromSupabase(){
   const row = activeTeamRow; // snapshot — user may switch teams mid-fetch
   try {
     const res = await fetch(`/api/getData?row=${row}`);
-    if(!res.ok) throw new Error('getData failed');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if(row !== activeTeamRow) return; // stale response for a different team
     if(Array.isArray(data) && data.length > 0){
       scrims = data;
       try{localStorage.setItem(scrimCacheKey(row), JSON.stringify(scrims));}catch(e){}
       renderAll();
-    } else if(row === 1 && scrims.length > 0) {
-      // Seed Supabase with existing local data on first load (legacy row only)
+    } else if(row === 1 && scrims.length > 0 && scrims !== SJ_SEED) {
+      // Seed Supabase with this browser's cached data on first load (legacy
+      // row only). Never push the hardcoded SJ_SEED: a fresh/private browser
+      // would otherwise write it to the server, and every other browser would
+      // then load it over its own data.
       await saveToSupabase();
     }
   } catch(err) {
     console.warn('Supabase load failed, using local data:', err);
+    toast(`⚠ Couldn't load scrims from server (${err.message}) — showing this browser's copy`, 'var(--loss)');
   }
+}
+
+// fetch() only rejects on network errors, so check the status too — a 4xx/5xx
+// from /api/saveData used to be swallowed, leaving changes only in this
+// browser's localStorage with no sign anything was wrong.
+async function postSave(body, url='/api/saveData'){
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    let detail = '';
+    try{ detail = (await res.json()).error || ''; }catch(e){}
+    throw new Error(`HTTP ${res.status}${detail ? ' — '+detail : ''}`);
+  }
+}
+function saveFailed(what, err){
+  console.warn(what+' save failed:', err);
+  toast(`⚠ ${what} not saved to server (${err.message}) — only on this browser`, 'var(--loss)');
 }
 
 async function saveToSupabase(){
   try {
-    await fetch('/api/saveData', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({row: activeTeamRow, data: scrims})
-    });
+    await postSave({row: activeTeamRow, data: scrims});
   } catch(err) {
-    console.warn('Supabase save failed:', err);
+    saveFailed('Scrims', err);
   }
 }
 
@@ -1067,7 +1268,13 @@ function champOpts(){return CHAMPS.map(c=>`<option value="${c}">${c}</option>`).
 // Logging/editing a match is always a live, current-moment action, so this
 // always offers the live roster — never an archived era's, even if one is
 // currently being viewed.
-function playerOpts(){return['<option value="">—</option>',...LIVE_PLAYER_NAMES.map(p=>`<option value="${p}">${p}</option>`)].join('');}
+function playerOpts(){
+  const others = PEOPLE.map(p=>p.name).filter(n=>!LIVE_PLAYER_NAMES.some(r=>r.toLowerCase()===n.toLowerCase())).sort((a,b)=>a.localeCompare(b));
+  return ['<option value="">—</option>',
+    ...LIVE_PLAYER_NAMES.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`),
+    others.length ? `<optgroup label="Everyone else">${others.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('')}</optgroup>` : ''
+  ].join('');
+}
 
 function parseKDA(str){
   if(!str) return null;
@@ -1109,7 +1316,40 @@ function normDate(d){
 // era's fixed [dateFrom, dateTo) window when viewing one, otherwise the
 // normal "Since X" / "All Time" toggle. Render functions use this instead of
 // the raw scrims array so both mechanisms work everywhere automatically.
+// Opponent/player filters from the Viewing bar, applied on every tab via vs()
+let gameFilter = {opp:'', player:''};
 function vs(){
+  let list = vsRange();
+  if(gameFilter.opp) list = list.filter(s=>(s.opponent||'').trim().toLowerCase()===gameFilter.opp);
+  if(gameFilter.player) list = list.filter(s=>s.players && ROLES.some(r=>(s.players[r]||'').toLowerCase()===gameFilter.player));
+  return list;
+}
+function setGameFilter(kind, val){
+  gameFilter[kind] = val;
+  renderGameFilters();
+  renderAll();
+  const cur = document.querySelector('.page.active')?.id.replace('page-','');
+  if(cur==='opponents') renderOpponents();
+  if(cur==='matchups') renderMatchups();
+}
+function emptyGamesMsg(){ return (gameFilter.opp||gameFilter.player) ? 'No scrims match these filters.' : 'No scrims in this date range.'; }
+function clearGameFilters(){ gameFilter = {opp:'', player:''}; setGameFilter('opp',''); }
+function renderGameFilters(){
+  const base = vsRange();
+  const opps = {}, people = {};
+  base.forEach(s=>{
+    const o=(s.opponent||'').trim(); if(o) opps[o.toLowerCase()] = o;
+    ROLES.forEach(r=>{ const p=(s.players?.[r]||'').trim(); if(p) people[p.toLowerCase()] = p; });
+  });
+  const opt = (map, cur, all) => `<option value="">${all}</option>` +
+    Object.entries(map).sort((a,b)=>a[1].localeCompare(b[1])).map(([k,v])=>`<option value="${esc(k)}"${k===cur?' selected':''}>${esc(v)}</option>`).join('');
+  const o = document.getElementById('flt-opp'), p = document.getElementById('flt-player');
+  if(o) o.innerHTML = opt(opps, gameFilter.opp, 'All opponents');
+  if(p) p.innerHTML = opt(people, gameFilter.player, 'All players');
+  const c = document.getElementById('flt-clear');
+  if(c) c.style.display = (gameFilter.opp||gameFilter.player) ? '' : 'none';
+}
+function vsRange(){
   const era = viewingEraIdx!==null ? (activeTeam().eras||[])[viewingEraIdx] : null;
   if(era){
     return scrims.filter(s=>{
@@ -1135,6 +1375,7 @@ function toggleDataRange(all){
 // cutoff, filter bars. Called at boot and on every team switch.
 function applyTeam(){
   const t = activeTeam();
+  matchups = teamMatchups();
   LIVE_PLAYERS = Array.isArray(t.players) ? t.players : [];
   LIVE_PLAYER_NAMES = LIVE_PLAYERS.map(p=>p.name);
   viewingEraIdx = null; // switching teams always drops back to the live roster/range
@@ -1149,23 +1390,21 @@ function applyTeam(){
   const tt = document.getElementById('team-title'); if(tt) tt.innerHTML = brand;
 
   // ADL and AEL are Southern Jits' leagues, not general per-team features
-  ['nav-adl-link','nav-ael-link'].forEach(id=>{
-    const link = document.getElementById(id);
-    if(link) link.style.display = (t.row === 1) ? '' : 'none';
-  });
+  const leagues = document.getElementById('nav-leagues');
+  if(leagues) leagues.style.display = (t.row === 1) ? '' : 'none';
 
   // Tryouts is the inverse: Southern Jits has a settled roster and doesn't run
   // them, so the tab is hidden there and shown for every other team.
-  const tryoutsBtn = document.getElementById('nav-tryouts-btn');
-  if(tryoutsBtn){
+  {
     const hideTryouts = (t.row === 1);
-    tryoutsBtn.style.display = hideTryouts ? 'none' : '';
     // Switching to Southern Jits while sitting on the Tryouts page would
     // strand the user on a page whose tab just disappeared — send them home.
     const onTryouts = document.getElementById('page-tryouts');
     if(hideTryouts && onTryouts && onTryouts.classList.contains('active')){
       showPage('dashboard', document.querySelector('.nav-btn[onclick*="dashboard"]'));
     }
+    const cur = document.querySelector('.page.active')?.id.replace('page-','');
+    if(cur) renderSubnav(cur);
   }
 
   // Accent color reskins buttons/badges/highlights everywhere via the CSS vars
@@ -1225,9 +1464,10 @@ function renderDateRangeBar(){
     document.getElementById('dr-all').classList.toggle('active', showAllData);
     return;
   }
-  // No cutoff and no archived era selected — keep the bar around only if
-  // there are eras to pick from via the dropdown, else hide it entirely.
-  bar.style.display = (activeTeam().eras||[]).length ? 'flex' : 'none';
+  // No cutoff: no date toggle, but the bar stays for the era picker and filters
+  bar.style.display = 'flex';
+  document.getElementById('dr-from').style.display = 'none';
+  document.getElementById('dr-all').style.display = 'none';
 }
 
 function renderEraSelect(){
@@ -1263,10 +1503,11 @@ function archiveEraAndReset(){
   if(!Array.isArray(t.eras)) t.eras = [];
   t.eras.push({label, dateFrom: t.dataFrom||null, dateTo: today, players: JSON.parse(JSON.stringify(t.players||[]))});
   saveTeams();
-  document.getElementById('roster-text').value = '';
+  _rosterTicks = new Set();
+  renderRosterChecklist();
   document.getElementById('roster-datefrom-input').value = today;
   renderEraSelect();
-  toast(`✓ Archived "${label}" — enter the new roster and Save`);
+  toast(`✓ Archived "${label}" — tick the new roster and Save`);
 }
 
 function renderTeamSelect(){
@@ -1335,6 +1576,8 @@ function switchTeam(row){
   if(row === activeTeamRow) return;
   activeTeamRow = row;
   try{ localStorage.setItem('sjs_active_team', String(row)); }catch(e){}
+  _oppSel = null;
+  gameFilter = {opp:'', player:''};
   let cached = null;
   try{ cached = JSON.parse(localStorage.getItem(scrimCacheKey(row))||'null'); }catch(e){}
   scrims = Array.isArray(cached) ? cached : (row===1 ? SJ_SEED : []);
@@ -1357,27 +1600,37 @@ function createTeam(){
 
 function saveTeams(){
   try{ localStorage.setItem('sjs_teams', JSON.stringify(TEAMS)); }catch(e){}
-  fetch('/api/saveData', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({row:9, data:{teams:TEAMS}})
-  }).catch(e=>console.warn('saveTeams failed:', e));
+  try{ localStorage.setItem('sjs_people', JSON.stringify(PEOPLE)); }catch(e){}
+  _teamsFromCache = true;
+  // Resolves true/false so callers can wait on it; failures are reported here
+  return postSave({row:9, data:{teams:TEAMS, people:PEOPLE}}).then(()=>true, e=>{ saveFailed('Teams/rosters', e); return false; });
 }
 
 async function loadTeams(){
   try{
     const res = await fetch('/api/getData?row=9');
-    if(!res.ok) return;
+    if(!res.ok){ toast(`⚠ Couldn't load teams/rosters from server (HTTP ${res.status})`, 'var(--loss)'); return; }
     const data = await res.json();
     if(data && Array.isArray(data.teams) && data.teams.length){
       TEAMS = data.teams;
+      if(Array.isArray(data.people)) PEOPLE = data.people;
+      _teamsFromCache = true;
+      _registryLoaded = true;
       try{ localStorage.setItem('sjs_teams', JSON.stringify(TEAMS)); }catch(e){}
+      try{ localStorage.setItem('sjs_people', JSON.stringify(PEOPLE)); }catch(e){}
       if(!TEAMS.find(t=>t.row===activeTeamRow)) activeTeamRow = TEAMS[0].row;
       applyTeam();
+    } else if(_teamsFromCache) {
+      // Server registry is empty — seed it from this browser's saved teams.
+      // Not from the hardcoded defaults, which would clobber other browsers.
+      _registryLoaded = true;
+      syncPeople();
+      await saveTeams();
     } else {
-      // First run — seed the registry with the current defaults
-      saveTeams();
+      return; // nothing real to attach legacy matchups to yet
     }
+    syncPeopleAndSave();
+    migrateLegacyMatchups();
   }catch(e){ console.warn('loadTeams failed:', e); }
 }
 
@@ -1404,7 +1657,9 @@ function openRosterEditor(){
   _pendingLogo = undefined;
   _pendingPasswordClear = false;
   document.getElementById('roster-title').textContent = `${t.name} — Roster`;
-  document.getElementById('roster-text').value = (t.players||[]).map(p=>`${p.name}: ${(p.roles||[]).join(', ')}`).join('\n');
+  _rosterTicks = new Set((t.players||[]).map(p=>p.name.toLowerCase()));
+  document.getElementById('roster-filter').value = '';
+  renderRosterChecklist();
   document.getElementById('roster-logo-preview').src = t.logo || initialsLogoDataUri(t.name, t.accent || '#e94560');
   document.getElementById('roster-logo-input').value = '';
   document.getElementById('roster-accent-input').value = t.accent || '#e94560';
@@ -1414,6 +1669,135 @@ function openRosterEditor(){
     : '🔓 Open access — no password set';
   document.getElementById('roster-datefrom-input').value = t.dataFrom || '';
   document.getElementById('roster-modal').classList.add('open');
+}
+
+// ── ROSTER CHECKLIST ─────────────────────────────────────────────────────
+let _rosterTicks = new Set(); // lowercased names ticked in the open roster editor
+function renderRosterChecklist(){
+  const box = document.getElementById('roster-checklist');
+  if(!box) return;
+  const q = (document.getElementById('roster-filter').value||'').trim().toLowerCase();
+  const list = PEOPLE.slice().sort((a,b)=>
+    (_rosterTicks.has(b.name.toLowerCase()) - _rosterTicks.has(a.name.toLowerCase())) || a.name.localeCompare(b.name))
+    .filter(p=>!q || p.name.toLowerCase().includes(q));
+  box.innerHTML = list.length ? list.map(p=>{
+    const on = _rosterTicks.has(p.name.toLowerCase());
+    return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;background:${on?'rgba(var(--accent-rgb),.08)':'var(--bg3)'};border:1px solid ${on?'rgba(var(--accent-rgb),.35)':'var(--border)'}">
+      <input type="checkbox" ${on?'checked':''} data-name="${esc(p.name)}" onchange="toggleRosterTick(this.dataset.name,this.checked)">
+      <span style="font-weight:600;color:var(--text)">${esc(p.name)}</span>
+      <span style="font-size:12px;color:var(--text3)">${esc((p.roles||[]).join(' · '))}</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--text3)">${esc(riotIdStr((p.accounts||[])[0]))}</span>
+    </label>`;
+  }).join('') : `<div style="font-size:13px;color:var(--text3);padding:10px">No people yet — add them with 👥 People…</div>`;
+}
+function toggleRosterTick(name, on){
+  const k = name.toLowerCase();
+  on ? _rosterTicks.add(k) : _rosterTicks.delete(k);
+  renderRosterChecklist();
+}
+
+// ── PEOPLE EDITOR ────────────────────────────────────────────────────────
+// Edits a draft copy; nothing changes until Save People.
+let _peopleDraft = null;
+function openPeopleModal(){
+  _peopleDraft = JSON.parse(JSON.stringify(PEOPLE));
+  _peopleDraft.forEach(p=>p._origName = p.name);
+  document.getElementById('people-filter').value = '';
+  renderPeopleList();
+  document.getElementById('people-modal').classList.add('open');
+}
+function closePeopleModal(){
+  _peopleDraft = null;
+  document.getElementById('people-modal').classList.remove('open');
+}
+function renderPeopleList(){
+  const box = document.getElementById('people-list');
+  if(!box || !_peopleDraft) return;
+  const q = (document.getElementById('people-filter').value||'').trim().toLowerCase();
+  const onRoster = row => TEAMS.filter(t=>(t.players||[]).some(p=>p.name.toLowerCase()===row.toLowerCase())).map(t=>t.name);
+  const rows = _peopleDraft.map((p,i)=>({p,i})).filter(({p})=>!q || p.name.toLowerCase().includes(q) || (p.accounts||[]).some(a=>riotIdStr(a).toLowerCase().includes(q)));
+  box.innerHTML = rows.length ? rows.map(({p,i})=>{
+    const teams = p._new ? [] : onRoster(p._origName || p.name);
+    const accts = (p.accounts||[]).map((a,j)=>`
+      <div style="display:flex;gap:6px;align-items:center">
+        <button type="button" title="${j===0?'Main account':'Make main account'}" onclick="setMainAccount(${i},${j})" style="background:none;border:none;cursor:pointer;font-size:15px;color:${j===0?'var(--gold)':'var(--text3)'}">${j===0?'★':'☆'}</button>
+        <input type="text" class="form-input" style="flex:1;font-size:13px;padding:6px 8px" placeholder="Name#TAG" value="${esc(riotIdStr(a))}" onchange="editAccount(${i},${j},this.value)">
+        <button type="button" class="edit-btn" title="Remove account" onclick="removeAccount(${i},${j})">✕</button>
+      </div>`).join('');
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <input type="text" class="form-input" style="flex:1;font-weight:700" placeholder="Name" value="${esc(p.name)}" onchange="_peopleDraft[${i}].name=this.value.trim()">
+        <input type="text" class="form-input" style="width:170px;font-size:13px" placeholder="Roles (Top, Mid)" value="${esc((p.roles||[]).join(', '))}" onchange="_peopleDraft[${i}].roles=this.value.split(',').map(r=>r.trim()).filter(Boolean)">
+        <button type="button" class="edit-btn" title="Delete person" onclick="deletePersonDraft(${i})">🗑</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">${accts}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <button type="button" class="edit-btn" onclick="addAccount(${i})">＋ Riot ID</button>
+        <span style="margin-left:auto;font-size:12px;color:var(--text3)">${teams.length?'On roster: '+esc(teams.join(', ')):'Not on a roster'}</span>
+      </div>
+    </div>`;
+  }).join('') : `<div style="font-size:13px;color:var(--text3);padding:10px">No matches.</div>`;
+}
+function addPersonDraft(){
+  const name = (document.getElementById('people-filter').value||'').trim();
+  _peopleDraft.unshift({id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, roles:[], accounts:[{name:'',tag:''}], _new:true});
+  document.getElementById('people-filter').value = '';
+  renderPeopleList();
+  document.querySelector('#people-list input')?.focus();
+}
+function deletePersonDraft(i){
+  const p = _peopleDraft[i];
+  const teams = TEAMS.filter(t=>(t.players||[]).some(x=>x.name.toLowerCase()===(p._origName||p.name).toLowerCase())).map(t=>t.name);
+  if(teams.length){ toast(`${p.name} is on the ${teams.join(', ')} roster — untick them there first`,'var(--warn)'); return; }
+  if(!confirm(`Remove ${p.name||'this person'} from People? Their past scrims keep their name.`)) return;
+  _peopleDraft.splice(i,1);
+  renderPeopleList();
+}
+function addAccount(i){ _peopleDraft[i].accounts.push({name:'',tag:''}); renderPeopleList(); }
+function removeAccount(i,j){ _peopleDraft[i].accounts.splice(j,1); renderPeopleList(); }
+function setMainAccount(i,j){ const a=_peopleDraft[i].accounts; a.unshift(a.splice(j,1)[0]); renderPeopleList(); }
+function editAccount(i,j,val){
+  const parsed = parseRiotId(val);
+  _peopleDraft[i].accounts[j] = parsed || {name:val.trim(), tag:'', _bad:!!val.trim()};
+  if(!parsed && val.trim()) toast('Riot IDs look like Name#TAG','var(--warn)');
+}
+function savePeople(){
+  // Tidy: drop blank accounts, refuse bad/duplicate entries
+  for(const p of _peopleDraft){
+    p.name = (p.name||'').trim();
+    p.accounts = (p.accounts||[]).filter(a=>a.name || a.tag);
+    if(!p.name){ toast('Every person needs a name','var(--loss)'); return; }
+    if(p.accounts.some(a=>a._bad || !a.tag)){ toast(`Fix ${p.name}'s Riot ID — use Name#TAG`,'var(--loss)'); return; }
+  }
+  const lower = _peopleDraft.map(p=>p.name.toLowerCase());
+  const dup = lower.find((n,i)=>lower.indexOf(n)!==i);
+  if(dup){ toast(`Two people are named "${dup}"`,'var(--loss)'); return; }
+
+  // Renames: carry the new name through rosters, eras, tryouts and this team's scrims
+  const oldById = Object.fromEntries(PEOPLE.map(p=>[p.id,p.name]));
+  const renames = _peopleDraft.filter(p=>oldById[p.id] && oldById[p.id]!==p.name).map(p=>[oldById[p.id], p.name]);
+  let scrimsChanged = false;
+  renames.forEach(([from,to])=>{
+    const same = n => (n||'').toLowerCase()===from.toLowerCase();
+    TEAMS.forEach(t=>{
+      (t.players||[]).forEach(p=>{ if(same(p.name)) p.name=to; });
+      (t.eras||[]).forEach(e=>(e.players||[]).forEach(p=>{ if(same(p.name)) p.name=to; }));
+      (t.tryouts||[]).forEach(c=>{ if(same(c.name)) c.name=to; });
+    });
+    scrims.forEach(sc=>Object.keys(sc.players||{}).forEach(r=>{ if(same(sc.players[r])){ sc.players[r]=to; scrimsChanged=true; } }));
+  });
+  // Roster roles follow the person's roles
+  TEAMS.forEach(t=>(t.players||[]).forEach(rp=>{
+    const p = _peopleDraft.find(x=>x.name.toLowerCase()===rp.name.toLowerCase());
+    if(p) rp.roles = (p.roles||[]).slice();
+  }));
+  PEOPLE = _peopleDraft.map(({_new,_origName,...p})=>({...p, accounts:p.accounts.map(a=>({name:a.name, tag:a.tag}))}));
+  saveTeams();
+  if(scrimsChanged) save();
+  closePeopleModal();
+  applyTeam();
+  if(document.getElementById('roster-modal').classList.contains('open')) renderRosterChecklist();
+  toast(`✓ People saved${renames.length?` — renamed ${renames.length}`:''}`);
 }
 
 function clearRosterPassword(){
@@ -1434,13 +1818,14 @@ function onRosterLogoChange(event){
 }
 
 function saveRoster(){
-  const lines = document.getElementById('roster-text').value.split('\n').map(l=>l.trim()).filter(Boolean);
-  const players = lines.map(l=>{
-    const ci = l.indexOf(':');
-    const name = (ci===-1 ? l : l.slice(0,ci)).trim();
-    const roles = ci===-1 ? [] : l.slice(ci+1).split(',').map(r=>r.trim()).filter(Boolean);
-    return {name, roles};
-  }).filter(p=>p.name);
+  // Keep current roster order, then add newly ticked people alphabetically
+  const cur = (activeTeam().players||[]).map(p=>p.name);
+  const ticked = PEOPLE.filter(p=>_rosterTicks.has(p.name.toLowerCase()));
+  ticked.sort((a,b)=>{
+    const ia = cur.findIndex(n=>n.toLowerCase()===a.name.toLowerCase()), ib = cur.findIndex(n=>n.toLowerCase()===b.name.toLowerCase());
+    return (ia<0?1e9:ia) - (ib<0?1e9:ib) || a.name.localeCompare(b.name);
+  });
+  const players = ticked.map(p=>({name:p.name, roles:(p.roles||[]).slice()}));
   activeTeam().players = players;
   activeTeam().accent = document.getElementById('roster-accent-input').value;
   if(_pendingLogo !== undefined) activeTeam().logo = _pendingLogo;
@@ -1488,17 +1873,15 @@ function renderDashboard(){
       <div class="stat-label">Win Rate</div><div class="stat-value gold">${wr}%</div>
     </div>
   `;
-  const filtered = activeFilter ? scrims.filter(s=>s.result===activeFilter) : [...scrims];
+  // Recent series as cards; the Wins/Losses cards narrow it to series containing one
+  const filtered = activeFilter ? scrims.filter(s=>s.result===activeFilter) : scrims;
   const title = activeFilter ? `${activeFilter}s (${filtered.length})` : 'Recent Scrims';
   document.getElementById('recent-title').textContent = title;
   document.getElementById('clear-filter').style.display = activeFilter ? 'inline-block' : 'none';
-  const display = activeFilter ? filtered : [...scrims].reverse().slice(0,10);
-  document.querySelector('#dashboard-table tbody').innerHTML = display.map((s,i)=>`
-    <tr onclick="openDetail(${realIdx(s)})" style="cursor:pointer">
-      <td>${fmtDate(s.date)}</td><td>${esc(s.opponent)}</td><td>${esc(s.game)}</td>
-      <td><span class="${s.result==='Win'?'badge-win':'badge-loss'}">${s.result}</span></td>
-      ${ROLES.map(r=>`<td>${champCell(s[r])}</td>`).join('')}
-    </tr>`).join('');
+  let groups = seriesGroups(scrims).filter(g=>!activeFilter || g.some(x=>x.result===activeFilter)).reverse();
+  if(!activeFilter) groups = groups.slice(0,4);
+  document.getElementById('dashboard-series').innerHTML = groups.length ? seriesCardsHtml(groups)
+    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`;
 }
 
 // ── SCRIMS ─
@@ -1507,59 +1890,158 @@ let scrimSortAsc = false; // false = newest first (default)
 function toggleDateSort(){
   scrimSortAsc = !scrimSortAsc;
   document.getElementById('date-sort-icon').textContent = scrimSortAsc ? '↑' : '↓';
+  document.getElementById('date-sort-label').textContent = scrimSortAsc ? 'Oldest first' : 'Newest first';
   renderScrims();
 }
 
-function renderScrims(){
-  // Group by opponent+date, sort groups, keep G1>G2>G3 within each group
-  const viewScrims = vs(); // filtered; keep outer `scrims` intact for indexOf/openDetail
-  const grouped = [];
-  const seen = {};
-  [...viewScrims].forEach((s,i) => {
+// ── OPPONENTS ─────────────────────────────────────────────────────────────
+// Head-to-head per opponent team, built from the scrim log. Contact/notes
+// per opponent live on the team in the registry (team.opponents[key]).
+let _oppSel = null; // lowercased opponent key being viewed, or null for the list
+const oppKey = n => (n||'').trim().toLowerCase();
+function opponentInfo(key){
+  const t = activeTeam();
+  if(!t.opponents || typeof t.opponents !== 'object') t.opponents = {};
+  return t.opponents[key] || {};
+}
+function opponentStats(list){
+  const by = {};
+  list.forEach(s=>{
+    const k = oppKey(s.opponent);
+    if(!k) return;
+    (by[k] = by[k] || {key:k, name:s.opponent.trim(), games:[]}).games.push(s);
+    by[k].name = s.opponent.trim(); // latest spelling wins
+  });
+  return Object.values(by).map(o=>{
+    const series = seriesGroups(o.games);
+    const sw = series.filter(g=>g.filter(x=>x.result==='Win').length > g.length/2).length;
+    const sl = series.filter(g=>g.filter(x=>x.result==='Win').length < g.length/2).length;
+    const gw = o.games.filter(g=>g.result==='Win').length;
+    const enemy = {};
+    o.games.forEach(g=>['etop','ejng','emid','eadc','esup'].forEach(r=>{ if(g[r]){ const e=(enemy[g[r]]=enemy[g[r]]||{n:0,w:0}); e.n++; if(g.result==='Win') e.w++; } }));
+    const last = o.games.map(g=>normDate(g.date)).sort().pop();
+    return {...o, series, sw, sl, gw, gl:o.games.length-gw, enemy, last};
+  }).sort((a,b)=>(b.last||'').localeCompare(a.last||''));
+}
+function openOpponent(key){ _oppSel = key; renderOpponents(); window.scrollTo(0,0); }
+function renderOpponents(){
+  const body = document.getElementById('opponents-body');
+  if(!body) return;
+  const all = opponentStats(vs());
+  const o = _oppSel && all.find(x=>x.key===_oppSel);
+  if(!o){
+    _oppSel = null;
+    body.innerHTML = `<div class="section-header"><span class="section-title">Opponents</span><div class="section-line"></div></div>` +
+      (all.length ? `<div class="opp-grid">${all.map(x=>{
+        const cls = x.sw>x.sl?'s-win':x.sl>x.sw?'s-loss':'s-even';
+        const top = Object.entries(x.enemy).sort((a,b)=>b[1].n-a[1].n).slice(0,5);
+        return `<div class="opp-card ${cls}" onclick="openOpponent('${esc(x.key)}')">
+          <div class="opp-name">${esc(x.name)}</div>
+          <div class="opp-meta">Last played ${fmtDate(x.last)}${opponentInfo(x.key).contact?` · ${esc(opponentInfo(x.key).contact)}`:''}</div>
+          <div class="opp-rec">
+            <div><b style="color:${x.sw>=x.sl?'var(--win)':'var(--loss)'}">${x.sw}–${x.sl}</b><span>Series</span></div>
+            <div><b style="color:${x.gw>=x.gl?'var(--win)':'var(--loss)'}">${x.gw}–${x.gl}</b><span>Games</span></div>
+          </div>
+          <div class="opp-champs" title="Their most-played champions">${top.map(([c])=>`<img class="champ-icon" src="${iconUrl(c)}" alt="${esc(c)}" title="${esc(c)}" onerror="this.style.display='none'">`).join('')}</div>
+        </div>`;}).join('')}</div>`
+      : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`);
+    return;
+  }
+  const info = opponentInfo(o.key);
+  const champs = Object.entries(o.enemy).sort((a,b)=>b[1].n-a[1].n);
+  const series = o.series.slice(); if(!scrimSortAsc) series.reverse();
+  body.innerHTML = `
+    <button class="data-range-btn" style="margin-bottom:14px" onclick="_oppSel=null;renderOpponents()">← All opponents</button>
+    <div class="series-card ${o.sw>o.sl?'s-win':o.sl>o.sw?'s-loss':'s-even'}" style="margin-bottom:18px">
+      <div class="series-head">
+        <span class="series-opp" style="font-size:24px">${esc(o.name)}</span>
+        <span class="series-date">Last played ${fmtDate(o.last)}</span>
+        <span class="series-score">Series ${o.sw}–${o.sl} · Games ${o.gw}–${o.gl}</span>
+      </div>
+      <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div><div class="form-label" style="margin-bottom:6px">Contact</div>
+          <div style="font-size:14px;color:${info.contact?'var(--text)':'var(--text3)'}">${esc(info.contact||'Not set')}</div></div>
+        <div><div class="form-label" style="margin-bottom:6px">Notes</div>
+          <div style="font-size:14px;color:${info.notes?'var(--text2)':'var(--text3)'};white-space:pre-wrap">${esc(info.notes||'None yet')}</div></div>
+        <div style="align-self:end;justify-self:end"><button class="edit-btn" onclick="editOpponentInfo('${esc(o.key)}')">✎ Edit contact &amp; notes</button></div>
+      </div>
+    </div>
+    <div class="section-header"><span class="section-title">Their picks against us</span><div class="section-line"></div></div>
+    <div class="card" style="margin-bottom:18px;display:flex;flex-wrap:wrap;gap:10px">
+      ${champs.length ? champs.map(([c,v])=>`<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        ${champCell(c)}<span style="font-size:12px;color:var(--text3)">×${v.n}</span>
+        <span style="font-size:12px;font-weight:700;color:${v.w/v.n>=.5?'var(--win)':'var(--loss)'}" title="Our win rate when they picked it">${Math.round(v.w/v.n*100)}%</span>
+      </div>`).join('') : '<span style="color:var(--text3);font-size:13px">No enemy picks logged.</span>'}
+    </div>
+    <div class="section-header"><span class="section-title">Series</span><div class="section-line"></div></div>
+    <div class="series-list">${seriesCardsHtml(series)}</div>`;
+}
+function editOpponentInfo(key){
+  const t = activeTeam();
+  const cur = opponentInfo(key);
+  const contact = prompt('Contact (Discord, captain, etc.):', cur.contact||'');
+  if(contact === null) return;
+  const notes = prompt('Notes about this team:', cur.notes||'');
+  if(notes === null) return;
+  t.opponents[key] = {contact:contact.trim(), notes:notes.trim()};
+  saveTeams();
+  renderOpponents();
+  toast('✓ Opponent saved');
+}
+
+// Groups games into series (same opponent + date), in log order
+function seriesGroups(list){
+  const grouped = [], seen = {};
+  list.forEach(s => {
     const key = s.date + '|' + s.opponent;
     if(!seen[key]) { seen[key] = []; grouped.push(seen[key]); }
     seen[key].push(s);
   });
+  return grouped;
+}
+
+function renderScrims(){
+  // One card per series (opponent + date), games in G1 > G2 > G3 order
+  const grouped = seriesGroups(vs()); // filtered; keep outer `scrims` intact for indexOf/openDetail
   if(!scrimSortAsc) grouped.reverse();
-  const colSpan = 9;
-  const renderRow = s => {
-    const idx=scrims.indexOf(s);
-    return `<tr onclick="openDetail(${idx})" style="cursor:pointer">
-      <td style="white-space:nowrap;vertical-align:top;padding-top:14px">${fmtDate(s.date)}</td>
-      <td style="font-weight:600;vertical-align:top;padding-top:14px">${esc(s.opponent)}</td>
-      <td style="color:var(--text2);vertical-align:top;padding-top:14px">${esc(s.game)}</td>
-      <td style="vertical-align:top;padding-top:14px"><span class="${s.result==='Win'?'badge-win':'badge-loss'}">${s.result}</span></td>
-      <td colspan="5" style="padding:8px 14px">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;gap:2px;align-items:center">
-            <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--win);width:32px;flex-shrink:0">OUR</span>
-            ${ROLES.map(r=>`<div style="display:flex;flex-direction:column;gap:2px;min-width:120px">
-              ${champCell(s[r])}
-              ${s.players&&s.players[r]?`<span class="player-tag">${esc(s.players[r])}</span>`:''}
-              ${s.kda&&s.kda[r]?`<span style="font-size:11px;color:${kdaColor(kdaRatio(s.kda[r]))};font-weight:700">${s.kda[r]}</span>`:''}
-            </div>`).join('')}
-          </div>
-          <div style="height:1px;background:rgba(255,255,255,.06);margin:4px 0"></div>
-          <div style="display:flex;gap:2px;align-items:center">
-            <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--loss);width:32px;flex-shrink:0">ENE</span>
-            ${['etop','ejng','emid','eadc','esup'].map((r,i)=>{const role=ROLES[i];return`<div style="display:flex;flex-direction:column;gap:2px;min-width:120px">${champCell(s[r])}${s.eplayers&&s.eplayers[role]?`<span class="player-tag">${esc(s.eplayers[role])}</span>`:''}</div>`;}).join('')}
-          </div>
-        </div>
-      </td>
-      <td style="vertical-align:top;padding-top:14px;max-width:120px" onclick="event.stopPropagation()">
-        ${s.notes ? `<div style="font-size:12px;color:var(--text3);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${esc(s.notes)}" onclick="this.style.whiteSpace=this.style.whiteSpace==='normal'?'nowrap':'normal';this.style.overflow=this.style.overflow==='visible'?'hidden':'visible';this.style.textOverflow=this.style.textOverflow==='clip'?'ellipsis':'clip'">${esc(s.notes)}</div>` : ''}
-      </td>
-      <td style="vertical-align:top;padding-top:14px" onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></td>
-    </tr>`;
+  const list = document.getElementById('series-list');
+  list.innerHTML = grouped.length ? seriesCardsHtml(grouped)
+    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`;
+}
+
+function seriesCardsHtml(grouped){
+  const slot = (champ, player, kda) => `<div class="series-slot" title="${esc(champ||'')}${player?' — '+esc(player):''}">
+      ${champ ? champCell(champ) : '<span style="color:var(--text3);font-size:12px">—</span>'}
+      ${player ? `<span class="player-tag">${esc(player)}</span>` : ''}
+      ${kda ? `<span style="font-size:11px;color:${kdaColor(kdaRatio(kda))};font-weight:700">${esc(kda)}</span>` : ''}
+    </div>`;
+  const gameRow = s => {
+    const idx = scrims.indexOf(s);
+    return `<div class="series-game" onclick="openDetail(${idx})">
+      <div class="series-game-label">
+        <span>${esc(s.game)}</span>
+        <span class="${s.result==='Win'?'badge-win':'badge-loss'}" style="align-self:flex-start">${s.result}</span>
+      </div>
+      <div class="series-picks-wrap">
+        <div class="series-picks">${ROLES.map(r=>slot(s[r], s.players?.[r], s.kda?.[r])).join('')}</div>
+        <div class="series-enemy">${['etop','ejng','emid','eadc','esup'].map((r,i)=>`<div class="series-slot">${s[r]?champCell(s[r]):'<span style="color:var(--text3);font-size:12px">—</span>'}${s.eplayers?.[ROLES[i]]?`<span class="player-tag" style="opacity:.7">${esc(s.eplayers[ROLES[i]])}</span>`:''}</div>`).join('')}</div>
+      </div>
+      <div onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></div>
+      ${s.notes ? `<div class="series-notes" title="${esc(s.notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(s.notes)}</div>` : ''}
+    </div>`;
   };
-  document.querySelector('#all-table tbody').innerHTML = grouped.map((group, gi) => {
-    const rows = group.map(renderRow).join('');
-    const spacer = gi < grouped.length - 1
-      ? `<tr><td colspan="${colSpan}" style="padding:0;height:10px;background:transparent;border:none;pointer-events:none"></td></tr>
-         <tr><td colspan="${colSpan}" style="padding:0;height:1px;background:rgba(255,255,255,0.06);border:none;pointer-events:none"></td></tr>
-         <tr><td colspan="${colSpan}" style="padding:0;height:10px;background:transparent;border:none;pointer-events:none"></td></tr>`
-      : '';
-    return rows + spacer;
+  return grouped.map(group => {
+    const w = group.filter(g=>g.result==='Win').length, l = group.length - w;
+    const cls = w>l ? 's-win' : l>w ? 's-loss' : 's-even';
+    const verdict = w>l ? 'W' : l>w ? 'L' : 'Split';
+    return `<div class="series-card ${cls}">
+      <div class="series-head">
+        <span class="series-opp">${esc(group[0].opponent)}</span>
+        <span class="series-date">${fmtDate(group[0].date)}</span>
+        <span class="series-score">${verdict} ${w}–${l}</span>
+      </div>
+      ${group.map(gameRow).join('')}
+    </div>`;
   }).join('');
 }
 
@@ -1714,7 +2196,7 @@ function renderAnalysis(){
     trendCard('Overall Win Rate',(wr*100).toFixed(1)+'%',`${wins}W — ${losses}L · ${total} games`,wr>=0.5?'var(--win)':wr>=0.4?'var(--gold)':'var(--loss)')+
     trendCard('Series Record',`${seriesW}W — ${seriesL}L`,`${sweeps} sweeps · ${splits} splits · ${revSplits} rev · ${swept} swept`,seriesW>=seriesL?'var(--win)':'var(--loss)')+
     trendCard('Current Streak',`${streak}× ${streakType==='Win'?'Win':'Loss'}`,streakType==='Win'?'On a winning run':'On a losing run',streakType==='Win'?'var(--win)':'var(--loss)')+
-    trendCard('Recent Form (L10)',`${last10W}W — ${10-last10W}L`,`${(last10W/10*100).toFixed(0)}% WR in last 10 games`,last10W>=6?'var(--win)':last10W>=4?'var(--gold)':'var(--loss)');
+    trendCard(`Recent Form (L${last10.length})`,`${last10W}W — ${last10.length-last10W}L`,`${last10.length?(last10W/last10.length*100).toFixed(0):0}% WR in last ${last10.length} games`,last10W/(last10.length||1)>=0.6?'var(--win)':last10W/(last10.length||1)>=0.4?'var(--gold)':'var(--loss)');
 
   // ── Recent form dots ──────────────────────────────────────────────────
   const formGames=scrims.slice(-15);
@@ -1858,7 +2340,14 @@ function renderPlayers(){
     return;
   }
 
-  document.getElementById('player-grid').innerHTML = filteredPlayers.map(p=>{
+  // Roster players with no games in this range get one line, not an empty card
+  const playedInRange = p => scrims.some(s=>s.players&&ROLES.some(r=>s.players[r]===p.name));
+  const idle = activePlayerSelect === 'all' ? filteredPlayers.filter(p=>!playedInRange(p)) : [];
+  const cardPlayers = filteredPlayers.filter(p=>!idle.includes(p));
+  const idleNote = idle.length
+    ? `<div style="font-size:13px;color:var(--text3);padding:12px 4px">No games in this range: ${idle.map(p=>esc(p.name)).join(', ')}</div>`
+    : '';
+  document.getElementById('player-grid').innerHTML = cardPlayers.map(p=>{
     // Filter scrims to only the selected role (or all roles)
     let pg;
     if (activeRoleFilter === 'all') {
@@ -1988,7 +2477,7 @@ function renderPlayers(){
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + idleNote;
 }
 
 function toggleHistory(id){
@@ -2473,9 +2962,33 @@ function showImportFeedback(type, msg){
   fb.innerHTML = msg;
 }
 
+// The capture script records every ally's Riot ID (osummoners); fill any
+// blank player names from the People list's accounts, mains and alts alike.
+// Returns how many names were filled.
+function fillPlayersFromAccounts(games){
+  const byId = {}, byName = {};
+  PEOPLE.forEach(p=>(p.accounts||[]).forEach(a=>{
+    byId[riotIdStr(a).toLowerCase()] = p.name;
+    const n = a.name.toLowerCase();
+    byName[n] = byName[n] === undefined ? p.name : (byName[n] === p.name ? p.name : null); // null = ambiguous
+  }));
+  let filled = 0;
+  games.forEach(g=>{
+    const ids = g.osummoners || {};
+    ROLES.forEach(r=>{
+      const raw = String(ids[r]||'').trim().toLowerCase();
+      if(!raw || (g.players && g.players[r])) return;
+      const who = raw.includes('#') ? (byId[raw.replace(/\s*#\s*/,'#')] || byName[raw.split('#')[0].trim()]) : byName[raw];
+      if(who){ (g.players = g.players || {})[r] = who; filled++; }
+    });
+  });
+  return filled;
+}
+
 function confirmImport(){
   if(!_importParsed){ toast('No validated data to import.', 'var(--loss)'); return; }
   const mode = document.querySelector('input[name="import-mode"]:checked').value;
+  const named = fillPlayersFromAccounts(_importParsed);
 
   if(mode === 'replace'){
     scrims = _importParsed;
@@ -2489,15 +3002,8 @@ function confirmImport(){
 
   save();
   closeImportModal();
-  renderDashboard();
-  renderScrimsTable();
-  renderAnalysis();
-  renderPlayers();
-  const count = mode === 'replace' ? _importParsed.length : _importParsed.filter(g => {
-    const existing = new Set(scrims.map(s => s.date+'|'+s.opponent+'|'+s.game));
-    return existing.has(g.date+'|'+g.opponent+'|'+g.game);
-  }).length;
-  toast(`✓ Import complete — ${scrims.length} total records loaded.`);
+  renderAll();
+  toast(`✓ Import complete — ${scrims.length} total records loaded${named?` · ${named} player name${named>1?'s':''} filled from People`:''}.`);
   _importParsed = null;
 }
 
@@ -2524,12 +3030,13 @@ async function loadRiotIdsFromSupabase(){
     if(data && data.riotIds && Object.keys(data.riotIds).length > 0){
       _riotIds = data.riotIds;
       try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(_riotIds)); }catch(e){}
+      syncPeopleAndSave();
       renderRiotIdSection();
     }
     if(data && data.riotApiKey){
       try{ localStorage.setItem('sjs_riot_key', data.riotApiKey); }catch(e){}
       const input = document.getElementById('soloq-api-key');
-      if(input) input.value = data.riotApiKey;
+      if(input && !input.value) input.value = data.riotApiKey;
     }
     if(data && data.discordWebhook){
       try{ localStorage.setItem('sjs_discord_webhook', data.discordWebhook); }catch(e){}
@@ -2556,14 +3063,10 @@ function saveDiscordWebhook(){
   _webhookSaveTimer = setTimeout(()=>{
     const ids = getRiotIds();
     const key = getApiKey();
-    fetch('/api/saveConfig', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ riotIds: ids, riotApiKey: key, discordWebhook: url })
-    }).then(()=>{
+    postSave({ riotIds: ids, riotApiKey: key, discordWebhook: url }, '/api/saveConfig').then(()=>{
       const st = document.getElementById('discord-webhook-status');
       if(st){ st.style.display='inline'; setTimeout(()=>st.style.display='none', 2000); }
-    }).catch(e=>console.warn('saveConfig failed:', e));
+    }).catch(e=>saveFailed('Discord webhook', e));
   }, 800);
 }
 
@@ -2604,49 +3107,36 @@ async function postLatestToDiscord(){
   }
 }
 
-function saveRiotId(name, summoner, tag){
-  const ids = getRiotIds();
-  ids[name] = {summoner, tag};
-  _riotIds = ids;
-  try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(ids)); }catch(e){}
-  // Persist to Supabase
-  fetch('/api/saveConfig', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ riotIds: ids })
-  }).catch(e => console.warn('saveConfig failed:', e));
-}
 function getSoloqPlayers(){
   const ids = getRiotIds();
-  return soloqPlayerNames().map(name => ({
-    name,
-    summoner: ids[name]?.summoner || '',
-    tag: ids[name]?.tag || '',
-  })).filter(p => p.summoner && p.tag);
+  return soloqPlayerNames().map(name => {
+    const accts = personByName(name)?.accounts || [];
+    const main = accts[0] || (ids[name]?.summoner ? {name:ids[name].summoner, tag:ids[name].tag} : null);
+    return { name, summoner: main?.name || '', tag: main?.tag || '', alts: accts.slice(1) };
+  }).filter(p => p.summoner && p.tag);
+}
+
+function renderManage(){
+  const t = activeTeam();
+  const el = document.getElementById('manage-team-summary');
+  if(el) el.innerHTML = `<strong style="color:var(--text)">${esc(t.name)}</strong> · ${(t.players||[]).length} on the roster · ${PEOPLE.length} people in total`;
+  renderRiotIdSection();
+  const k = document.getElementById('soloq-api-key');
+  if(k && !k.value) k.value = getApiKey();
 }
 
 function renderRiotIdSection(){
-  const ids = getRiotIds();
   const grid = document.getElementById('riot-id-grid');
   if(!grid) return;
-  grid.innerHTML = soloqPlayerNames().map(name => {
-    const p = {name};
-    const saved = ids[p.name] || {summoner:'', tag:''};
+  const roster = soloqPlayerNames();
+  const names = [...roster, ...PEOPLE.map(p=>p.name).filter(n=>!roster.some(r=>r.toLowerCase()===n.toLowerCase())).sort((a,b)=>a.localeCompare(b))];
+  grid.innerHTML = names.map(name => {
+    const accts = personByName(name)?.accounts || [];
     return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
-      <div style="font-family:var(--font-d);font-weight:700;font-size:14px;margin-bottom:8px;color:var(--text)">${p.name}</div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input id="rid-sum-${p.name}" type="text" class="form-input" style="flex:1;font-size:13px;padding:6px 8px" placeholder="Summoner name" value="${saved.summoner}" oninput="saveRiotIdFromInput('${p.name}')">
-        <span style="color:var(--text3);font-size:14px">#</span>
-        <input id="rid-tag-${p.name}" type="text" class="form-input" style="width:72px;font-size:13px;padding:6px 8px" placeholder="Tag" value="${saved.tag}" oninput="saveRiotIdFromInput('${p.name}')">
-      </div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${esc(name)}${roster.includes(name)?' <span style="font-size:10px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-left:4px">Roster</span>':''}</div>
+      ${accts.length ? accts.map((a,j)=>`<div style="font-size:13px;color:${j?'var(--text3)':'var(--text2)'}">${j?'':'★ '}${esc(riotIdStr(a))}</div>`).join('') : '<div style="font-size:13px;color:var(--text3)">No Riot ID yet</div>'}
     </div>`;
-  }).join('');
-}
-
-function saveRiotIdFromInput(name){
-  const sum = document.getElementById(`rid-sum-${name}`)?.value.trim() || '';
-  const tag = document.getElementById(`rid-tag-${name}`)?.value.trim() || '';
-  saveRiotId(name, sum, tag);
+  }).join('') + `<button type="button" class="edit-btn" style="align-self:center;justify-self:start" onclick="openPeopleModal()">👥 Edit People &amp; Riot IDs</button>`;
 }
 
 const TIER_ORDER = {IRON:1,BRONZE:2,SILVER:3,GOLD:4,PLATINUM:5,EMERALD:6,DIAMOND:7,MASTER:8,GRANDMASTER:9,CHALLENGER:10};
@@ -2662,8 +3152,8 @@ async function proxyFetch(url) {
   const res = await fetch(fnUrl, {signal: AbortSignal.timeout(10000)});
   const data = await res.json();
   if (!res.ok) {
-    const msg = data?.status?.message || data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
+    const msg = data?.status?.message || data?.error || 'request failed';
+    throw new Error(`${res.status} ${msg}`);
   }
   return data;
 }
@@ -2676,13 +3166,9 @@ function saveApiKey(){
   document.getElementById('soloq-api-key').value = key;
   // Persist to Supabase alongside Riot IDs
   const ids = getRiotIds();
-  fetch('/api/saveConfig', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ riotIds: ids, riotApiKey: key })
-  }).catch(e => console.warn('saveConfig failed:', e));
-  toast('✓ API key saved!');
-  refreshSoloQ();
+  postSave({ riotIds: ids, riotApiKey: key }, '/api/saveConfig').catch(e => saveFailed('API key', e));
+  toast('✓ API key saved — testing it on Solo Queue');
+  showPage('soloq');
 }
 
 function getApiKey(){
@@ -2849,7 +3335,7 @@ function renderSoloQCard(data){
     <div class="player-card-header">
       <div>
         <div class="player-name">${player.name}</div>
-        <div class="player-roles" style="font-size:12px;color:var(--text3)">${player.summoner}#${player.tag}</div>
+        <div class="player-roles" style="font-size:12px;color:var(--text3)">${esc(player.summoner)}#${esc(player.tag)}${(player.alts||[]).length?` <span title="${esc(player.alts.map(riotIdStr).join(', '))}">· +${player.alts.length} alt${player.alts.length>1?'s':''}</span>`:''}</div>
       </div>
       <div style="text-align:right">
         <div style="font-family:var(--font-d);font-size:20px;font-weight:900;color:${color}">${rankStr}</div>
@@ -2875,9 +3361,15 @@ async function refreshSoloQ(){
   const grid = document.getElementById('soloq-grid');
 
   if(!key){
-    document.getElementById('soloq-api-key').focus();
     status.style.display='block';
-    status.innerHTML='⚠ Please enter your Riot API key above first.';
+    status.innerHTML='⚠ No Riot API key saved yet — unlock editing (🔒) and add one under ⚙ Manage → Riot API Key.';
+    return;
+  }
+
+  if(!getSoloqPlayers().length){
+    status.style.display='block';
+    status.innerHTML='⚠ No Riot IDs saved for this roster yet — add them under Players → Riot IDs.';
+    grid.innerHTML='';
     return;
   }
 
@@ -2894,7 +3386,7 @@ async function refreshSoloQ(){
       const data = await fetchSoloQ(player);
       results.push({ok:true, data});
     } catch(e) {
-      if(!keyInvalid && (e.message.includes('403') || e.message.toLowerCase().includes('forbidden') || e.message.toLowerCase().includes('unauthorized'))){
+      if(!keyInvalid && (/^40[13]\b/.test(e.message) || e.message.includes('403') || e.message.toLowerCase().includes('forbidden') || e.message.toLowerCase().includes('unauthorized'))){
         keyInvalid = true;
       }
       results.push({ok:false, player, error:e.message});
@@ -2908,14 +3400,14 @@ async function refreshSoloQ(){
     status.style.display='block';
     status.innerHTML=`<div style="color:var(--loss);background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:8px;padding:16px 20px;text-align:center">
       <div style="font-size:16px;font-weight:700;margin-bottom:6px">⚠ API Key Invalid or Expired</div>
-      <div style="font-size:13px;color:var(--text2)">Riot dev keys expire every 24 hours. Get a new one at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> and paste it above.</div>
+      <div style="font-size:13px;color:var(--text2)">Riot dev keys expire every 24 hours. Get a new one at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> and paste it under ⚙ Manage → Riot API Key (unlock editing with 🔒 first).</div>
     </div>`;
     return;
   }
 
   if(results.length > 0 && results.every(r=>!r.ok)){
     status.style.display='block';
-    status.innerHTML=`<div style="color:var(--warn);text-align:center;padding:16px">⚠ Could not reach the Riot API. The CORS proxy may be temporarily down — try again in a moment.</div>`;
+    status.innerHTML=`<div style="color:var(--warn);text-align:center;padding:16px">⚠ Could not reach the Riot API — try again in a moment.<div style="font-size:12px;color:var(--text3);margin-top:6px">${results[0].error}</div></div>`;
     return;
   }
 
@@ -2969,9 +3461,35 @@ const ITEMS_LIST = [
   "Staff of Flowing Water","Zeke's Convergence",
 ].sort();
 
-let matchups = [];
-try { const r = localStorage.getItem('sjs_matchups'); if(r) matchups = JSON.parse(r); } catch(e){}
-function saveMatchups(){ try{ localStorage.setItem('sjs_matchups', JSON.stringify(matchups)); }catch(e){} }
+// Matchup notes live per-team in the teams registry (row 9), like tryouts,
+// so everyone viewing the team sees the same list. They used to be kept only
+// in this browser's localStorage under 'sjs_matchups'; migrateLegacyMatchups()
+// moves any such notes onto Southern Jits once the registry has loaded.
+function teamMatchups(){
+  const t = activeTeam();
+  if(!Array.isArray(t.matchups)) t.matchups = [];
+  return t.matchups;
+}
+let matchups = teamMatchups();
+function saveMatchups(){ saveTeams(); }
+
+async function migrateLegacyMatchups(){
+  let legacy = null;
+  try{ legacy = JSON.parse(localStorage.getItem('sjs_matchups')||'null'); }catch(e){}
+  if(!Array.isArray(legacy) || !legacy.length) return;
+  const sj = TEAMS.find(t=>t.row===1);
+  if(!sj) return;
+  if(!Array.isArray(sj.matchups)) sj.matchups = [];
+  // Merge rather than overwrite — someone else may have added notes already
+  const key = m => [m.role,m.author,m.champ,m.vs,m.notes].join('|');
+  const have = new Set(sj.matchups.map(key));
+  sj.matchups.push(...legacy.filter(m => !have.has(key(m))));
+  // On failure saveTeams already showed the error; keep the legacy copy
+  if(!(await saveTeams())) return;
+  try{ localStorage.removeItem('sjs_matchups'); }catch(e){}
+  if(activeTeamRow===1){ matchups = teamMatchups(); renderMatchups(); }
+  toast(`✓ Moved ${legacy.length} matchup note${legacy.length>1?'s':''} from this browser to the server`);
+}
 
 // DDragon data cache
 const MU_RIMG = 'https://ddragon.leagueoflegends.com/cdn/img/';
@@ -3637,6 +4155,7 @@ function saveTryout(){
   };
   if(existing) tryouts()[editTryoutIdx] = entry;
   else tryouts().push(entry);
+  upsertPerson(entry.name, entry.roles, [parseRiotId(entry.riotId)]);
   saveTeams();
   closeTryoutModal();
   renderTryouts();
@@ -3675,24 +4194,57 @@ function promoteTryout(){
   toast(`✓ ${c.name} added to the roster`);
 }
 
+// Top-level sections; pages in the same group share a sub-tab bar.
+const NAV_GROUPS = {
+  dashboard:{nav:'nav-dashboard'},
+  scrims:{nav:'nav-scrims', tabs:[['scrims','Series'],['opponents','Opponents']]},
+  draft:{nav:'nav-draft', tabs:[['analysis','Analysis'],['matchups','Matchups']]},
+  players:{nav:'nav-players', tabs:[['players','Stats'],['soloq','Solo Queue'],['tryouts','Tryouts']]},
+  manage:{nav:'nav-manage'},
+};
+function pageGroup(page){
+  return Object.keys(NAV_GROUPS).find(g=>g===page || (NAV_GROUPS[g].tabs||[]).some(t=>t[0]===page)) || page;
+}
+function renderSubnav(page){
+  const bar = document.getElementById('subnav');
+  if(!bar) return;
+  // Southern Jits has a settled roster, so it has no Tryouts tab
+  const tabs = (NAV_GROUPS[pageGroup(page)]?.tabs||[]).filter(t=>t[0]!=='tryouts' || activeTeam().row!==1);
+  bar.classList.toggle('show', tabs.length>1);
+  bar.innerHTML = tabs.map(([id,label])=>`<button class="subnav-btn${id===page?' active':''}" onclick="showPage('${id}')">${label}</button>`).join('');
+}
+function toggleNavMenu(e){
+  e.stopPropagation();
+  const dd = e.currentTarget.closest('.nav-dd');
+  // Fixed positioning so the tab bar's sideways scrolling doesn't clip the menu
+  const r = e.currentTarget.getBoundingClientRect(), menu = dd.querySelector('.nav-dd-menu');
+  menu.style.top = (r.bottom + 6) + 'px';
+  menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 176)) + 'px';
+  dd.classList.toggle('open');
+}
+document.addEventListener('click', ()=>document.querySelectorAll('.nav-dd.open').forEach(d=>d.classList.remove('open')));
+
 function showPage(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  btn.classList.add('active');
+  document.getElementById(NAV_GROUPS[pageGroup(page)]?.nav)?.classList.add('active');
+  renderSubnav(page);
+  // The date-range toggle doesn't apply to settings
+  document.body.classList.toggle('on-manage', page==='manage');
+  if(page==='manage') renderManage();
   if(page==='analysis')renderAnalysis();
-  if(page==='soloq'){
-    const k=getApiKey();
-    if(k){document.getElementById('soloq-api-key').value=k;refreshSoloQ();}
-  }
+  if(page==='soloq') refreshSoloQ();
 
   if(page==='scrims')renderScrims();
+  if(page==='opponents')renderOpponents();
   if(page==='players')renderPlayers();
   if(page==='matchups')renderMatchups();
   if(page==='tryouts')renderTryouts();
 }
 
 function renderAll(){
+  renderGameFilters();
   renderDashboard();
   renderNotifs();
   updateDiscordBtn();
@@ -3702,6 +4254,7 @@ function renderAll(){
     if(id==='analysis')renderAnalysis();
     if(id==='draft')renderDraft();
     if(id==='scrims')renderScrims();
+    if(id==='opponents')renderOpponents();
     if(id==='players')renderPlayers();
     if(id==='tryouts')renderTryouts();
   }
@@ -3851,9 +4404,11 @@ document.addEventListener('click', function(e){
       unlocked = true;
       window._sjsUnlocked = true;
       document.getElementById('vm-style').textContent = '';
-      ['log-btn-el','import-btn-el','export-btn-el','notif-btn'].forEach(function(id){
+      ['log-btn-el','notif-btn'].forEach(function(id){
         const el = document.getElementById(id); if(el) el.style.display = '';
       });
+      const manageBtn = document.getElementById('nav-manage');
+      if(manageBtn) manageBtn.style.display = '';
       const riotSection = document.getElementById('riot-id-section');
       if(riotSection){ riotSection.style.display = 'block'; renderRiotIdSection(); }
       const lb = document.getElementById('lock-btn');

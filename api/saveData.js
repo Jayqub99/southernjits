@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
   try {
     // Two accepted body shapes:
     //   [...scrims]           → legacy, writes row 1 (Southern Jits)
-    //   { row: N, data: ... } → writes row N (3 = ADL, 9 = teams registry, 10+ = teams)
+    //   { row: N, data: ... } → writes row N (3 = ADL, 4 = AEL, 9 = teams registry, 10+ = teams)
     let row = 1;
     let data = req.body;
     if (data && !Array.isArray(data) && typeof data === 'object' && 'row' in data) {
