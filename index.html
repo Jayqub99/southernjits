@@ -1158,6 +1158,7 @@ function toggleDataRange(all){
 // cutoff, filter bars. Called at boot and on every team switch.
 function applyTeam(){
   const t = activeTeam();
+  matchups = teamMatchups();
   LIVE_PLAYERS = Array.isArray(t.players) ? t.players : [];
   LIVE_PLAYER_NAMES = LIVE_PLAYERS.map(p=>p.name);
   viewingEraIdx = null; // switching teams always drops back to the live roster/range
@@ -1381,7 +1382,8 @@ function createTeam(){
 function saveTeams(){
   try{ localStorage.setItem('sjs_teams', JSON.stringify(TEAMS)); }catch(e){}
   _teamsFromCache = true;
-  postSave({row:9, data:{teams:TEAMS}}).catch(e=>saveFailed('Teams/rosters', e));
+  // Resolves true/false so callers can wait on it; failures are reported here
+  return postSave({row:9, data:{teams:TEAMS}}).then(()=>true, e=>{ saveFailed('Teams/rosters', e); return false; });
 }
 
 async function loadTeams(){
@@ -1398,8 +1400,11 @@ async function loadTeams(){
     } else if(_teamsFromCache) {
       // Server registry is empty — seed it from this browser's saved teams.
       // Not from the hardcoded defaults, which would clobber other browsers.
-      saveTeams();
+      await saveTeams();
+    } else {
+      return; // nothing real to attach legacy matchups to yet
     }
+    migrateLegacyMatchups();
   }catch(e){ console.warn('loadTeams failed:', e); }
 }
 
@@ -2979,9 +2984,35 @@ const ITEMS_LIST = [
   "Staff of Flowing Water","Zeke's Convergence",
 ].sort();
 
-let matchups = [];
-try { const r = localStorage.getItem('sjs_matchups'); if(r) matchups = JSON.parse(r); } catch(e){}
-function saveMatchups(){ try{ localStorage.setItem('sjs_matchups', JSON.stringify(matchups)); }catch(e){} }
+// Matchup notes live per-team in the teams registry (row 9), like tryouts,
+// so everyone viewing the team sees the same list. They used to be kept only
+// in this browser's localStorage under 'sjs_matchups'; migrateLegacyMatchups()
+// moves any such notes onto Southern Jits once the registry has loaded.
+function teamMatchups(){
+  const t = activeTeam();
+  if(!Array.isArray(t.matchups)) t.matchups = [];
+  return t.matchups;
+}
+let matchups = teamMatchups();
+function saveMatchups(){ saveTeams(); }
+
+async function migrateLegacyMatchups(){
+  let legacy = null;
+  try{ legacy = JSON.parse(localStorage.getItem('sjs_matchups')||'null'); }catch(e){}
+  if(!Array.isArray(legacy) || !legacy.length) return;
+  const sj = TEAMS.find(t=>t.row===1);
+  if(!sj) return;
+  if(!Array.isArray(sj.matchups)) sj.matchups = [];
+  // Merge rather than overwrite — someone else may have added notes already
+  const key = m => [m.role,m.author,m.champ,m.vs,m.notes].join('|');
+  const have = new Set(sj.matchups.map(key));
+  sj.matchups.push(...legacy.filter(m => !have.has(key(m))));
+  // On failure saveTeams already showed the error; keep the legacy copy
+  if(!(await saveTeams())) return;
+  try{ localStorage.removeItem('sjs_matchups'); }catch(e){}
+  if(activeTeamRow===1){ matchups = teamMatchups(); renderMatchups(); }
+  toast(`✓ Moved ${legacy.length} matchup note${legacy.length>1?'s':''} from this browser to the server`);
+}
 
 // DDragon data cache
 const MU_RIMG = 'https://ddragon.leagueoflegends.com/cdn/img/';
