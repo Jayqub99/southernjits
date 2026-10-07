@@ -153,8 +153,7 @@ tbody td{padding:12px 14px;color:var(--text)}
 .series-game:hover{background:rgba(255,255,255,.02)}
 .series-game-label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)}
 .lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.lanes-head{cursor:default;padding-top:8px;padding-bottom:0;border-bottom:none}
-.lanes-head:hover{background:none}
+.lanes-head{display:grid;grid-template-columns:92px 1fr auto;gap:12px;padding:8px 18px 0}
 .lanes-head .lanes > div{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding-left:10px}
 .lane{display:flex;flex-direction:column;gap:4px;min-width:0}
 .pick{border-radius:6px;padding:7px 9px;border-left:3px solid;min-width:0}
@@ -2137,7 +2136,9 @@ function seriesCardsHtml(grouped){
       ${notes ? `<div class="series-notes" title="${esc(notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(notes)}</div>` : ''}
     </div>`;
   };
-  const roleHead = `<div class="series-game lanes-head"><div></div><div class="lanes">${ROLES.map(r=>`<div>${roleNames[r]}</div>`).join('')}</div><div></div></div>`;
+  // The invisible Edit button keeps the columns lined up with the game rows
+  // whether or not editing is unlocked
+  const roleHead = `<div class="lanes-head"><div></div><div class="lanes">${ROLES.map(r=>`<div>${roleNames[r]}</div>`).join('')}</div><div><button class="edit-btn" style="visibility:hidden" tabindex="-1">Edit</button></div></div>`;
   return grouped.map(group => {
     const w = group.filter(g=>g.result==='Win').length, l = group.length - w;
     const cls = w>l ? 's-win' : l>w ? 's-loss' : 's-even';
