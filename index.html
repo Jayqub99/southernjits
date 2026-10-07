@@ -3149,14 +3149,33 @@ async function proxyFetch(url) {
   urlObj.searchParams.delete('api_key');
   const endpoint = urlObj.pathname + (urlObj.search ? urlObj.search : '');
   const fnUrl = `/api/soloq?endpoint=${encodeURIComponent(endpoint)}&key=${encodeURIComponent(key)}`;
-  const res = await fetch(fnUrl, {signal: AbortSignal.timeout(10000)});
-  const data = await res.json();
-  if (!res.ok) {
-    const msg = data?.status?.message || data?.error || 'request failed';
-    throw new Error(`${res.status} ${msg}`);
+  // Riot allows ~100 requests per 2 minutes on dev/personal keys. When it
+  // says slow down (429), wait the time it asks for and try again.
+  for(let attempt = 0; ; attempt++){
+    const res = await fetch(fnUrl, {signal: AbortSignal.timeout(10000)});
+    const data = await res.json().catch(()=>({}));
+    if(res.status === 429 && attempt < 2){
+      const wait = Math.min(parseInt(res.headers.get('Retry-After')) || 10, 30);
+      soloqWaitNote(wait);
+      await new Promise(r=>setTimeout(r, wait*1000));
+      continue;
+    }
+    if (!res.ok) {
+      const msg = data?.status?.message || data?.error || 'request failed';
+      throw new Error(`${res.status} ${msg}`);
+    }
+    return data;
   }
-  return data;
 }
+function soloqWaitNote(secs){
+  const st = document.getElementById('soloq-status');
+  if(st){ st.style.display='block'; st.innerHTML=`<span style="color:var(--text2)">⏳ Riot rate limit — waiting ${secs}s and continuing…</span>`; }
+}
+
+// Things that never change, kept per browser so refreshes stay under Riot's
+// limit: each Riot ID's PUUID (scoped to the API key) and finished matches.
+function soloqCache(){ try{ return JSON.parse(localStorage.getItem('sjs_soloq_cache')||'{}'); }catch(e){ return {}; } }
+function soloqCacheSave(c){ try{ localStorage.setItem('sjs_soloq_cache', JSON.stringify(c)); }catch(e){} }
 
 function saveApiKey(){
   let key = document.getElementById('soloq-api-key').value.trim();
@@ -3179,19 +3198,18 @@ async function fetchSoloQ(player){
   const key = getApiKey();
   if(!key) throw new Error('No API key');
 
-  const acctUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(player.summoner)}/${encodeURIComponent(player.tag)}?api_key=${key}`;
-  const acct = await proxyFetch(acctUrl);
-  
-  if (acct.status && acct.status.status_code >= 400) {
-    throw new Error(`Account API: ${acct.status.message}`);
-  }
-  if (!acct.puuid) throw new Error('Player not found');
-
-  const sumUrl = `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${acct.puuid}?api_key=${key}`;
-  const sum = await proxyFetch(sumUrl);
-  
-  if (sum.status && sum.status.status_code >= 400) {
-    throw new Error(`Summoner API: ${sum.status.message}`);
+  const cache = soloqCache();
+  cache.puuid = cache.puuid || {};
+  cache.matches = cache.matches || {};
+  const idKey = `${key.slice(-8)}|${player.summoner}#${player.tag}`.toLowerCase();
+  let acct = cache.puuid[idKey] ? {puuid: cache.puuid[idKey]} : null;
+  if(!acct){
+    const acctUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(player.summoner)}/${encodeURIComponent(player.tag)}?api_key=${key}`;
+    try { acct = await proxyFetch(acctUrl); }
+    catch(e){ if(/^404/.test(e.message)) throw new Error(`Riot ID ${player.summoner}#${player.tag} not found — check it in People`); throw e; }
+    if (!acct.puuid) throw new Error('Player not found');
+    cache.puuid[idKey] = acct.puuid;
+    soloqCacheSave(cache);
   }
 
   const rankUrl = `https://na1.api.riotgames.com/lol/league/v4/entries/by-puuid/${acct.puuid}?api_key=${key}`;
@@ -3227,10 +3245,20 @@ async function fetchSoloQ(player){
   }
 
   // Fetch recent ranked match history (non-blocking — failures just return empty)
+  // Only matches this browser hasn't seen are fetched in full
   let matches = [];
   try {
-    const mRes = await fetch(`/api/matches?puuid=${encodeURIComponent(acct.puuid)}&key=${encodeURIComponent(key)}`, {signal: AbortSignal.timeout(12000)});
-    if (mRes.ok) matches = await mRes.json();
+    const mine = cache.matches[acct.puuid] = cache.matches[acct.puuid] || {};
+    const have = Object.keys(mine).join(',');
+    const mRes = await fetch(`/api/matches?puuid=${encodeURIComponent(acct.puuid)}&key=${encodeURIComponent(key)}&have=${encodeURIComponent(have)}`, {signal: AbortSignal.timeout(15000)});
+    if (mRes.ok) {
+      const {ids, details} = await mRes.json();
+      Object.assign(mine, details || {});
+      matches = (ids||[]).map(id=>mine[id]).filter(Boolean);
+      // Keep only what's still in the recent list so the cache doesn't grow forever
+      Object.keys(mine).forEach(id=>{ if(!(ids||[]).includes(id)) delete mine[id]; });
+      soloqCacheSave(cache);
+    }
   } catch(e) { /* match history is optional — degrade gracefully */ }
 
   return {player, puuid: acct.puuid, soloRank, matches, lpDelta, rankChanged};
@@ -3355,7 +3383,9 @@ function renderSoloQCard(data){
   </div>`;
 }
 
+let _soloqAt = 0; // last refresh; switching back to the tab within 2 min reuses it
 async function refreshSoloQ(){
+  _soloqAt = Date.now();
   const key = getApiKey();
   const status = document.getElementById('soloq-status');
   const grid = document.getElementById('soloq-grid');
@@ -4235,7 +4265,7 @@ function showPage(page,btn){
   document.body.classList.toggle('on-manage', page==='manage');
   if(page==='manage') renderManage();
   if(page==='analysis')renderAnalysis();
-  if(page==='soloq') refreshSoloQ();
+  if(page==='soloq' && (Date.now() - _soloqAt > 120000 || !document.getElementById('soloq-grid').children.length)) refreshSoloQ();
 
   if(page==='scrims')renderScrims();
   if(page==='opponents')renderOpponents();

@@ -34,7 +34,7 @@ function fetchJson(url) {
       res.on('end', () => {
         try {
           const data = JSON.parse(body);
-          resolve({ status: res.statusCode, data });
+          resolve({ status: res.statusCode, data, retryAfter: res.headers['retry-after'] });
         } catch (e) {
           reject(new Error('Invalid JSON from Riot API'));
         }
@@ -67,7 +67,8 @@ module.exports = async function handler(req, res) {
   const url = `https://${host}${endpoint}?api_key=${key}`;
 
   try {
-    const { status, data } = await fetchJson(url);
+    const { status, data, retryAfter } = await fetchJson(url);
+    if (retryAfter) res.setHeader('Retry-After', retryAfter);
     return res.status(status).json(data);
   } catch (err) {
     return res.status(502).json({ error: err.message });
