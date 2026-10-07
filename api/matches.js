@@ -8,7 +8,12 @@
  * Query params:
  *   puuid  — player PUUID (from account API)
  *   key    — Riot API key
- *   count  — number of matches to fetch (default 7, max 15)
+ *   count  — number of matches to list (default 10, max 20)
+ *   have   — comma-separated match IDs the browser already has cached;
+ *            their details aren't fetched again (finished matches never change)
+ *
+ * Returns { ids: [...newest first], details: { matchId: summary|null } }
+ * with details only for IDs not in `have`.
  */
 
 const https = require('https');
@@ -19,7 +24,7 @@ function fetchJson(url) {
       let body = '';
       res.on('data', chunk => body += chunk);
       res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); }
+        try { resolve({ status: res.statusCode, data: JSON.parse(body), retryAfter: res.headers['retry-after'] }); }
         catch (e) { reject(new Error('Invalid JSON from Riot API')); }
       });
     }).on('error', reject);
@@ -32,7 +37,8 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { puuid, key, count } = req.query || {};
+  const { puuid, key, count, have } = req.query || {};
+  const cached = new Set(String(have || '').split(',').filter(Boolean));
 
   if (!puuid || !key) return res.status(400).json({ error: 'Missing puuid or key' });
   if (!/^RGAPI-[a-zA-Z0-9-]+$/.test(key)) return res.status(400).json({ error: 'Invalid key format' });
@@ -41,28 +47,32 @@ module.exports = async function handler(req, res) {
 
   try {
     // 1. Get recent ranked solo queue match IDs (queue=420)
-    const { status: s1, data: ids } = await fetchJson(
+    const { status: s1, data: ids, retryAfter } = await fetchJson(
       `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?queue=420&type=ranked&count=${gameCount}&api_key=${key}`
     );
 
     if (s1 !== 200) {
+      if (retryAfter) res.setHeader('Retry-After', retryAfter);
       return res.status(s1).json({ error: ids?.status?.message || `Match list error (${s1})` });
     }
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(200).json([]);
+      return res.status(200).json({ ids: [], details: {} });
     }
 
-    // 2. Fetch all match details in parallel
-    const details = await Promise.all(
-      ids.map(id => fetchJson(`https://americas.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${key}`))
+    // 2. Fetch details only for matches the browser doesn't have yet
+    const missing = ids.filter(id => !cached.has(id));
+    const fetched = await Promise.all(
+      missing.map(id => fetchJson(`https://americas.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${key}`).catch(() => ({ status: 0 })))
     );
 
-    // 3. Extract the data relevant to this player from each match
-    const result = details.map(({ status, data: m }) => {
-      if (status !== 200 || !m?.info?.participants) return null;
+    // 3. Extract the data relevant to this player from each match.
+    // Failed fetches (e.g. rate limited) are left out, so they're retried next time.
+    const details = {};
+    fetched.forEach(({ status, data: m }, i) => {
+      if (status !== 200 || !m?.info?.participants) return;
       const p = m.info.participants.find(x => x.puuid === puuid);
-      if (!p) return null;
-      return {
+      if (!p) return;
+      details[missing[i]] = {
         champion:  p.championName,
         position:  p.teamPosition,   // TOP | JUNGLE | MIDDLE | BOTTOM | UTILITY | ""
         win:       p.win,
@@ -73,9 +83,9 @@ module.exports = async function handler(req, res) {
         duration:  m.info.gameDuration,   // seconds
         gameDate:  m.info.gameStartTimestamp, // epoch ms
       };
-    }).filter(Boolean);
+    });
 
-    return res.status(200).json(result);
+    return res.status(200).json({ ids, details });
   } catch (err) {
     return res.status(502).json({ error: err.message });
   }
