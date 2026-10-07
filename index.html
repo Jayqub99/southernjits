@@ -121,6 +121,17 @@ tbody td{padding:12px 14px;color:var(--text)}
 .champ-cell{display:flex;align-items:center;gap:7px}
 /* Scrim series cards: one card per opponent+date, one row per game */
 .series-list{display:flex;flex-direction:column;gap:14px}
+.opp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.opp-card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
+.opp-card:hover{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.15)}
+.opp-card.s-win{border-left-color:var(--win)}.opp-card.s-loss{border-left-color:var(--loss)}.opp-card.s-even{border-left-color:var(--gold)}
+.opp-name{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text)}
+.opp-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.opp-rec{display:flex;gap:18px;margin-top:12px}
+.opp-rec b{display:block;font-family:var(--font-d);font-size:20px}
+.opp-rec span{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.opp-champs{display:flex;gap:4px;margin-top:12px}
+.opp-champs .champ-icon{width:26px;height:26px}
 .series-card{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;overflow:hidden}
 .series-card.s-win{border-left-color:var(--win)}
 .series-card.s-loss{border-left-color:var(--loss)}
@@ -447,6 +458,11 @@ tbody td{padding:12px 14px;color:var(--text)}
       <button class="data-range-btn" onclick="toggleDateSort()"><span id="date-sort-label">Newest first</span> <span id="date-sort-icon">↓</span></button>
     </div>
     <div id="series-list" class="series-list"></div>
+  </div>
+
+  <!-- OPPONENTS -->
+  <div id="page-opponents" class="page">
+    <div id="opponents-body"></div>
   </div>
 
   <!-- ANALYSIS & DRAFT (combined) -->
@@ -1525,6 +1541,7 @@ function switchTeam(row){
   if(row === activeTeamRow) return;
   activeTeamRow = row;
   try{ localStorage.setItem('sjs_active_team', String(row)); }catch(e){}
+  _oppSel = null;
   let cached = null;
   try{ cached = JSON.parse(localStorage.getItem(scrimCacheKey(row))||'null'); }catch(e){}
   scrims = Array.isArray(cached) ? cached : (row===1 ? SJ_SEED : []);
@@ -1843,17 +1860,122 @@ function toggleDateSort(){
   renderScrims();
 }
 
-function renderScrims(){
-  // One card per series (opponent + date), games in G1 > G2 > G3 order
-  const viewScrims = vs(); // filtered; keep outer `scrims` intact for indexOf/openDetail
-  const grouped = [];
-  const seen = {};
-  viewScrims.forEach(s => {
+// ── OPPONENTS ─────────────────────────────────────────────────────────────
+// Head-to-head per opponent team, built from the scrim log. Contact/notes
+// per opponent live on the team in the registry (team.opponents[key]).
+let _oppSel = null; // lowercased opponent key being viewed, or null for the list
+const oppKey = n => (n||'').trim().toLowerCase();
+function opponentInfo(key){
+  const t = activeTeam();
+  if(!t.opponents || typeof t.opponents !== 'object') t.opponents = {};
+  return t.opponents[key] || {};
+}
+function opponentStats(list){
+  const by = {};
+  list.forEach(s=>{
+    const k = oppKey(s.opponent);
+    if(!k) return;
+    (by[k] = by[k] || {key:k, name:s.opponent.trim(), games:[]}).games.push(s);
+    by[k].name = s.opponent.trim(); // latest spelling wins
+  });
+  return Object.values(by).map(o=>{
+    const series = seriesGroups(o.games);
+    const sw = series.filter(g=>g.filter(x=>x.result==='Win').length > g.length/2).length;
+    const sl = series.filter(g=>g.filter(x=>x.result==='Win').length < g.length/2).length;
+    const gw = o.games.filter(g=>g.result==='Win').length;
+    const enemy = {};
+    o.games.forEach(g=>['etop','ejng','emid','eadc','esup'].forEach(r=>{ if(g[r]){ const e=(enemy[g[r]]=enemy[g[r]]||{n:0,w:0}); e.n++; if(g.result==='Win') e.w++; } }));
+    const last = o.games.map(g=>normDate(g.date)).sort().pop();
+    return {...o, series, sw, sl, gw, gl:o.games.length-gw, enemy, last};
+  }).sort((a,b)=>(b.last||'').localeCompare(a.last||''));
+}
+function openOpponent(key){ _oppSel = key; renderOpponents(); window.scrollTo(0,0); }
+function renderOpponents(){
+  const body = document.getElementById('opponents-body');
+  if(!body) return;
+  const all = opponentStats(vs());
+  const o = _oppSel && all.find(x=>x.key===_oppSel);
+  if(!o){
+    _oppSel = null;
+    body.innerHTML = `<div class="section-header"><span class="section-title">Opponents</span><div class="section-line"></div></div>` +
+      (all.length ? `<div class="opp-grid">${all.map(x=>{
+        const cls = x.sw>x.sl?'s-win':x.sl>x.sw?'s-loss':'s-even';
+        const top = Object.entries(x.enemy).sort((a,b)=>b[1].n-a[1].n).slice(0,5);
+        return `<div class="opp-card ${cls}" onclick="openOpponent('${esc(x.key)}')">
+          <div class="opp-name">${esc(x.name)}</div>
+          <div class="opp-meta">Last played ${fmtDate(x.last)}${opponentInfo(x.key).contact?` · ${esc(opponentInfo(x.key).contact)}`:''}</div>
+          <div class="opp-rec">
+            <div><b style="color:${x.sw>=x.sl?'var(--win)':'var(--loss)'}">${x.sw}–${x.sl}</b><span>Series</span></div>
+            <div><b style="color:${x.gw>=x.gl?'var(--win)':'var(--loss)'}">${x.gw}–${x.gl}</b><span>Games</span></div>
+          </div>
+          <div class="opp-champs" title="Their most-played champions">${top.map(([c])=>`<img class="champ-icon" src="${iconUrl(c)}" alt="${esc(c)}" title="${esc(c)}" onerror="this.style.display='none'">`).join('')}</div>
+        </div>`;}).join('')}</div>`
+      : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">No scrims in this date range.</div>`);
+    return;
+  }
+  const info = opponentInfo(o.key);
+  const champs = Object.entries(o.enemy).sort((a,b)=>b[1].n-a[1].n);
+  const series = o.series.slice(); if(!scrimSortAsc) series.reverse();
+  body.innerHTML = `
+    <button class="data-range-btn" style="margin-bottom:14px" onclick="_oppSel=null;renderOpponents()">← All opponents</button>
+    <div class="series-card ${o.sw>o.sl?'s-win':o.sl>o.sw?'s-loss':'s-even'}" style="margin-bottom:18px">
+      <div class="series-head">
+        <span class="series-opp" style="font-size:24px">${esc(o.name)}</span>
+        <span class="series-date">Last played ${fmtDate(o.last)}</span>
+        <span class="series-score">Series ${o.sw}–${o.sl} · Games ${o.gw}–${o.gl}</span>
+      </div>
+      <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        <div><div class="form-label" style="margin-bottom:6px">Contact</div>
+          <div style="font-size:14px;color:${info.contact?'var(--text)':'var(--text3)'}">${esc(info.contact||'Not set')}</div></div>
+        <div><div class="form-label" style="margin-bottom:6px">Notes</div>
+          <div style="font-size:14px;color:${info.notes?'var(--text2)':'var(--text3)'};white-space:pre-wrap">${esc(info.notes||'None yet')}</div></div>
+        <div style="align-self:end;justify-self:end"><button class="edit-btn" onclick="editOpponentInfo('${esc(o.key)}')">✎ Edit contact &amp; notes</button></div>
+      </div>
+    </div>
+    <div class="section-header"><span class="section-title">Their picks against us</span><div class="section-line"></div></div>
+    <div class="card" style="margin-bottom:18px;display:flex;flex-wrap:wrap;gap:10px">
+      ${champs.length ? champs.map(([c,v])=>`<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px">
+        ${champCell(c)}<span style="font-size:12px;color:var(--text3)">×${v.n}</span>
+        <span style="font-size:12px;font-weight:700;color:${v.w/v.n>=.5?'var(--win)':'var(--loss)'}" title="Our win rate when they picked it">${Math.round(v.w/v.n*100)}%</span>
+      </div>`).join('') : '<span style="color:var(--text3);font-size:13px">No enemy picks logged.</span>'}
+    </div>
+    <div class="section-header"><span class="section-title">Series</span><div class="section-line"></div></div>
+    <div class="series-list">${seriesCardsHtml(series)}</div>`;
+}
+function editOpponentInfo(key){
+  const t = activeTeam();
+  const cur = opponentInfo(key);
+  const contact = prompt('Contact (Discord, captain, etc.):', cur.contact||'');
+  if(contact === null) return;
+  const notes = prompt('Notes about this team:', cur.notes||'');
+  if(notes === null) return;
+  t.opponents[key] = {contact:contact.trim(), notes:notes.trim()};
+  saveTeams();
+  renderOpponents();
+  toast('✓ Opponent saved');
+}
+
+// Groups games into series (same opponent + date), in log order
+function seriesGroups(list){
+  const grouped = [], seen = {};
+  list.forEach(s => {
     const key = s.date + '|' + s.opponent;
     if(!seen[key]) { seen[key] = []; grouped.push(seen[key]); }
     seen[key].push(s);
   });
+  return grouped;
+}
+
+function renderScrims(){
+  // One card per series (opponent + date), games in G1 > G2 > G3 order
+  const grouped = seriesGroups(vs()); // filtered; keep outer `scrims` intact for indexOf/openDetail
   if(!scrimSortAsc) grouped.reverse();
+  const list = document.getElementById('series-list');
+  list.innerHTML = grouped.length ? seriesCardsHtml(grouped)
+    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">No scrims in this date range.</div>`;
+}
+
+function seriesCardsHtml(grouped){
   const slot = (champ, player, kda) => `<div class="series-slot" title="${esc(champ||'')}${player?' — '+esc(player):''}">
       ${champ ? champCell(champ) : '<span style="color:var(--text3);font-size:12px">—</span>'}
       ${player ? `<span class="player-tag">${esc(player)}</span>` : ''}
@@ -1874,12 +1996,7 @@ function renderScrims(){
       ${s.notes ? `<div class="series-notes" title="${esc(s.notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(s.notes)}</div>` : ''}
     </div>`;
   };
-  const list = document.getElementById('series-list');
-  if(!grouped.length){
-    list.innerHTML = `<div class="card" style="text-align:center;color:var(--text3);padding:40px">No scrims in this date range.</div>`;
-    return;
-  }
-  list.innerHTML = grouped.map(group => {
+  return grouped.map(group => {
     const w = group.filter(g=>g.result==='Win').length, l = group.length - w;
     const cls = w>l ? 's-win' : l>w ? 's-loss' : 's-even';
     const verdict = w>l ? 'W' : l>w ? 'L' : 'Split';
@@ -4029,7 +4146,7 @@ function promoteTryout(){
 // Top-level sections; pages in the same group share a sub-tab bar.
 const NAV_GROUPS = {
   dashboard:{nav:'nav-dashboard'},
-  scrims:{nav:'nav-scrims'},
+  scrims:{nav:'nav-scrims', tabs:[['scrims','Series'],['opponents','Opponents']]},
   draft:{nav:'nav-draft', tabs:[['analysis','Analysis'],['matchups','Matchups']]},
   players:{nav:'nav-players', tabs:[['players','Stats'],['soloq','Solo Queue'],['tryouts','Tryouts']]},
   manage:{nav:'nav-manage'},
@@ -4069,6 +4186,7 @@ function showPage(page,btn){
   if(page==='soloq') refreshSoloQ();
 
   if(page==='scrims')renderScrims();
+  if(page==='opponents')renderOpponents();
   if(page==='players')renderPlayers();
   if(page==='matchups')renderMatchups();
   if(page==='tryouts')renderTryouts();
@@ -4084,6 +4202,7 @@ function renderAll(){
     if(id==='analysis')renderAnalysis();
     if(id==='draft')renderDraft();
     if(id==='scrims')renderScrims();
+    if(id==='opponents')renderOpponents();
     if(id==='players')renderPlayers();
     if(id==='tryouts')renderTryouts();
   }
