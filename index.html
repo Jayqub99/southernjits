@@ -2690,8 +2690,8 @@ async function proxyFetch(url) {
   const res = await fetch(fnUrl, {signal: AbortSignal.timeout(10000)});
   const data = await res.json();
   if (!res.ok) {
-    const msg = data?.status?.message || data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
+    const msg = data?.status?.message || data?.error || 'request failed';
+    throw new Error(`${res.status} ${msg}`);
   }
   return data;
 }
@@ -2905,6 +2905,13 @@ async function refreshSoloQ(){
     return;
   }
 
+  if(!getSoloqPlayers().length){
+    status.style.display='block';
+    status.innerHTML='⚠ No Riot IDs saved for this roster yet — add them under Players → Riot IDs.';
+    grid.innerHTML='';
+    return;
+  }
+
   status.style.display='block';
   status.innerHTML='<span style="color:var(--text2)">⏳ Loading solo queue stats…</span>';
   grid.innerHTML='';
@@ -2918,7 +2925,7 @@ async function refreshSoloQ(){
       const data = await fetchSoloQ(player);
       results.push({ok:true, data});
     } catch(e) {
-      if(!keyInvalid && (e.message.includes('403') || e.message.toLowerCase().includes('forbidden') || e.message.toLowerCase().includes('unauthorized'))){
+      if(!keyInvalid && (/^40[13]\b/.test(e.message) || e.message.includes('403') || e.message.toLowerCase().includes('forbidden') || e.message.toLowerCase().includes('unauthorized'))){
         keyInvalid = true;
       }
       results.push({ok:false, player, error:e.message});
@@ -2939,7 +2946,7 @@ async function refreshSoloQ(){
 
   if(results.length > 0 && results.every(r=>!r.ok)){
     status.style.display='block';
-    status.innerHTML=`<div style="color:var(--warn);text-align:center;padding:16px">⚠ Could not reach the Riot API. The CORS proxy may be temporarily down — try again in a moment.</div>`;
+    status.innerHTML=`<div style="color:var(--warn);text-align:center;padding:16px">⚠ Could not reach the Riot API — try again in a moment.<div style="font-size:12px;color:var(--text3);margin-top:6px">${results[0].error}</div></div>`;
     return;
   }
 
