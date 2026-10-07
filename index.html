@@ -33,12 +33,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-u);font-size:
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(var(--accent-rgb),0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.025) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0}
 
 /* HEADER */
-header{position:sticky;top:0;z-index:200;background:rgba(10,10,15,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+header{position:sticky;top:0;z-index:200;background:rgba(10,10,15,0.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 32px 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;row-gap:6px;column-gap:16px}
+header .logo{margin-right:auto}
 .logo{display:flex;align-items:center;gap:12px;flex-shrink:0}
 .logo-hex{width:36px;height:36px;background:var(--accent);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:900}
 .logo-text{font-family:var(--font-d);font-size:20px;font-weight:700;letter-spacing:.04em}
 .logo-text span{color:var(--accent)}
-nav{display:flex;gap:4px}
+nav{display:flex;gap:4px;align-items:center;order:10;flex:1 1 100%;margin:0 -10px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav .nav-btn{white-space:nowrap;flex-shrink:0;border-radius:6px 6px 0 0;border-bottom:2px solid transparent}
+nav .nav-btn.active{border-bottom-color:var(--accent)}
+.nav-dd{position:relative}
+.nav-dd-menu{display:none;position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;min-width:160px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.nav-dd.open .nav-dd-menu{display:block}
+.nav-dd-menu a{display:block;padding:8px 12px;border-radius:5px;color:var(--text2);text-decoration:none;font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.nav-dd-menu a:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.subnav{display:none;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap}
+.subnav.show{display:flex}
+body.on-manage #data-range-bar{display:none!important}
+.subnav-btn{background:none;border:1px solid transparent;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:6px;cursor:pointer}
+.subnav-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.subnav-btn.active{color:var(--accent);border-color:rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.08)}
 .nav-btn{background:none;border:none;color:var(--text2);font-family:var(--font-u);font-size:14px;font-weight:600;letter-spacing:.08em;padding:9px 18px;cursor:pointer;border-radius:6px;transition:all .2s;text-transform:uppercase}
 .nav-btn:hover{color:var(--text);background:var(--panel)}
 .nav-btn.active{color:var(--accent);background:rgba(var(--accent-rgb),0.1)}
@@ -48,6 +63,7 @@ nav{display:flex;gap:4px}
 .header-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-u);font-size:14px;padding:9px 14px 9px 36px;outline:none;transition:border-color .2s}
 .header-search input:focus{border-color:var(--accent)}
 .header-search input::placeholder{color:var(--text3)}
+@media(max-width:1180px) and (min-width:769px){.header-search{flex-basis:180px}}
 .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
 .log-btn{background:var(--accent);color:#fff;border:none;font-family:var(--font-u);font-size:14px;font-weight:700;letter-spacing:.1em;padding:10px 22px;cursor:pointer;border-radius:6px;text-transform:uppercase;transition:all .2s;flex-shrink:0}
 .log-btn:hover{background:var(--accent-hover);box-shadow:0 0 20px rgba(var(--accent-rgb),.4)}
@@ -266,10 +282,10 @@ tbody td{padding:12px 14px;color:var(--text)}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 
 @media(max-width:768px){
-  header{padding:0 16px;flex-wrap:wrap;height:auto;min-height:60px;padding-top:10px;padding-bottom:10px;gap:10px}
+  header{padding:10px 16px 0;gap:10px}
   .header-search{flex:1 1 100%;order:3}
   .logo-text{font-size:17px}
-  nav{gap:2px}
+  nav{gap:2px;margin:0 -6px}
   .nav-btn{padding:7px 10px;font-size:12px}
   main{padding:16px}
   .grid-2{grid-template-columns:1fr}
@@ -284,7 +300,7 @@ tbody td{padding:12px 14px;color:var(--text)}
   .player-grid{grid-template-columns:1fr}
 }
 @media(max-width:480px){
-  header{padding:0 10px;padding-top:8px;padding-bottom:8px}
+  header{padding:8px 10px 0}
   .logo-text{font-size:15px}
   .nav-btn{font-size:11px;padding:6px 8px}
   main{padding:10px}
@@ -325,22 +341,23 @@ tbody td{padding:12px 14px;color:var(--text)}
     <select id="team-select" onchange="onTeamSelect(this)" title="Switch team"></select>
   </div>
   <nav>
-    <button class="nav-btn active" onclick="showPage('dashboard',this)">Dashboard</button>
-    <button class="nav-btn" onclick="showPage('scrims',this)">Scrims</button>
-    <button class="nav-btn" onclick="showPage('analysis',this)">Analysis & Draft</button>
-    <button class="nav-btn" onclick="showPage('players',this)">Players</button>
-    <button class="nav-btn" onclick="showPage('soloq',this)">Solo Queue</button>
-    <button class="nav-btn" onclick="showPage('matchups',this)">Matchups</button>
-    <button class="nav-btn" id="nav-tryouts-btn" onclick="showPage('tryouts',this)">Tryouts</button>
-    <a href="/adl-league.html" class="nav-btn" id="nav-adl-link" style="text-decoration:none">ADL League</a>
-    <a href="/ael-league.html" class="nav-btn" id="nav-ael-link" style="text-decoration:none">AEL League</a>
+    <button class="nav-btn active" id="nav-dashboard" onclick="showPage('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" id="nav-scrims" onclick="showPage('scrims',this)">Scrims</button>
+    <button class="nav-btn" id="nav-draft" onclick="showPage('analysis',this)">Draft</button>
+    <button class="nav-btn" id="nav-players" onclick="showPage('players',this)">Players</button>
+    <div class="nav-dd" id="nav-leagues">
+      <button class="nav-btn" onclick="toggleNavMenu(event)">Leagues ▾</button>
+      <div class="nav-dd-menu">
+        <a href="/adl-league.html" id="nav-adl-link">ADL League</a>
+        <a href="/ael-league.html" id="nav-ael-link">AEL League</a>
+      </div>
+    </div>
+    <button class="nav-btn" id="nav-manage" onclick="showPage('manage',this)" style="display:none" title="Team settings, People, API key, Discord">⚙ Manage</button>
   </nav>
   <div class="header-search">
     <span class="search-icon">🔍</span>
     <input type="text" id="global-search" placeholder="Search scrims, champs, players..." oninput="handleSearch(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off">
   </div>
-  <button id="import-btn-el" style="display:none;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" onclick="openImportModal()">Import Data</button>
-  <button id="export-btn-el" style="display:none;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;color:var(--text2);font-family:var(--font-u);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;transition:all .2s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(255,255,255,.2)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'" onclick="exportData()">Export Data</button>
   <button class="notif-btn" id="notif-btn" onclick="toggleNotifs()" title="Data issues" style="display:none">
     <span class="notif-icon">🔔</span>
     <span class="notif-count" id="notif-count" style="display:none">0</span>
@@ -360,6 +377,7 @@ tbody td{padding:12px 14px;color:var(--text)}
 </div>
 
 <main>
+  <div class="subnav" id="subnav"></div>
   <!-- DATA RANGE TOGGLE -->
   <div id="data-range-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
     <span style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Viewing:</span>
@@ -496,24 +514,7 @@ tbody td{padding:12px 14px;color:var(--text)}
     </div>
     <div id="player-grid"></div>
 
-    <!-- RIOT IDs -->
-    <div id="riot-id-section" style="margin-top:28px;display:none">
-      <div class="section-header"><span class="section-title">Riot IDs</span><div class="section-line"></div></div>
-      <div class="card" style="margin-top:12px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;letter-spacing:.04em">Riot IDs live in People — one list for every team, with as many accounts per person as you need.</div>
-        <div id="riot-id-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
-      </div>
 
-      <!-- Discord Webhook -->
-      <div class="section-header" style="margin-top:24px"><span class="section-title">Discord Webhook</span><div class="section-line"></div></div>
-      <div class="card" style="margin-top:12px">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Paste your Discord channel webhook URL to enable posting scrim results. Get it from your server's channel settings → Integrations → Webhooks.</div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <input id="discord-webhook-input" type="text" class="form-input" placeholder="https://discord.com/api/webhooks/..." style="flex:1;font-size:13px" oninput="saveDiscordWebhook()">
-          <span id="discord-webhook-status" style="font-size:12px;color:var(--win);display:none">✓ Saved</span>
-        </div>
-      </div>
-    </div>
 
   </div>
   <div id="page-soloq" class="page">
@@ -523,8 +524,6 @@ tbody td{padding:12px 14px;color:var(--text)}
       <button onclick="refreshSoloQ()" id="soloq-refresh-btn" style="background:rgba(var(--accent-rgb),.1);border:1px solid rgba(var(--accent-rgb),.3);color:var(--accent);font-family:var(--font-u);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border-radius:5px;cursor:pointer;transition:all .2s;flex-shrink:0">↻ Refresh All</button>
     </div>
 
-    <!-- API key loaded automatically from Supabase -->
-    <input type="hidden" id="soloq-api-key">
 
     <div id="soloq-status" style="display:none;padding:16px;color:var(--text2);font-size:14px;text-align:center"></div>
     <div class="player-grid" id="soloq-grid"></div>
@@ -552,6 +551,52 @@ tbody td{padding:12px 14px;color:var(--text)}
     </div>
     <div id="matchup-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
     <div id="matchup-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);font-size:14px">No matchup notes yet. Add the first one!</div>
+  </div>
+
+  <!-- MANAGE (editor unlocked only) -->
+  <div id="page-manage" class="page">
+    <div class="section-header"><span class="section-title">Team</span><div class="section-line"></div></div>
+    <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px;font-size:13px;color:var(--text2)" id="manage-team-summary"></div>
+      <button type="button" class="edit-btn" onclick="openRosterEditor()">✎ Roster, Logo &amp; Password</button>
+    </div>
+    <div class="section-header" style="margin-top:24px"><span class="section-title">Data</span><div class="section-line"></div></div>
+    <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px;font-size:13px;color:var(--text2)">Back up this team's scrims to a file, or load scrims from one.</div>
+      <button type="button" class="edit-btn" onclick="openImportModal()">Import Data</button>
+      <button type="button" class="edit-btn" onclick="exportData()">Export Data</button>
+    </div>
+    <div style="margin-top:24px">
+    <!-- RIOT IDs -->
+      <div id="riot-id-section" style="display:none">
+        <div class="section-header"><span class="section-title">People &amp; Riot IDs</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px;letter-spacing:.04em">Riot IDs live in People — one list for every team, with as many accounts per person as you need.</div>
+          <div id="riot-id-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+        </div>
+  
+        <!-- Riot API key -->
+        <div class="section-header" style="margin-top:24px"><span class="section-title">Riot API Key</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Solo Queue needs this. Riot development keys expire 24 hours after you make them — get a fresh one at <a href="https://developer.riotgames.com" target="_blank" rel="noopener" style="color:var(--accent)">developer.riotgames.com</a> and paste it here. A personal or production key from Riot doesn't expire.</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input id="soloq-api-key" type="password" class="form-input" placeholder="RGAPI-..." style="flex:1;min-width:220px;font-size:13px" autocomplete="off">
+            <button type="button" class="edit-btn" onclick="const i=document.getElementById('soloq-api-key');i.type=i.type==='password'?'text':'password'">Show</button>
+            <button type="button" class="edit-btn" onclick="saveApiKey()">Save &amp; Test</button>
+          </div>
+        </div>
+  
+        <!-- Discord Webhook -->
+        <div class="section-header" style="margin-top:24px"><span class="section-title">Discord Webhook</span><div class="section-line"></div></div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Paste your Discord channel webhook URL to enable posting scrim results. Get it from your server's channel settings → Integrations → Webhooks.</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input id="discord-webhook-input" type="text" class="form-input" placeholder="https://discord.com/api/webhooks/..." style="flex:1;font-size:13px" oninput="saveDiscordWebhook()">
+            <span id="discord-webhook-status" style="font-size:12px;color:var(--win);display:none">✓ Saved</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TRYOUTS -->
@@ -1260,23 +1305,21 @@ function applyTeam(){
   const tt = document.getElementById('team-title'); if(tt) tt.innerHTML = brand;
 
   // ADL and AEL are Southern Jits' leagues, not general per-team features
-  ['nav-adl-link','nav-ael-link'].forEach(id=>{
-    const link = document.getElementById(id);
-    if(link) link.style.display = (t.row === 1) ? '' : 'none';
-  });
+  const leagues = document.getElementById('nav-leagues');
+  if(leagues) leagues.style.display = (t.row === 1) ? '' : 'none';
 
   // Tryouts is the inverse: Southern Jits has a settled roster and doesn't run
   // them, so the tab is hidden there and shown for every other team.
-  const tryoutsBtn = document.getElementById('nav-tryouts-btn');
-  if(tryoutsBtn){
+  {
     const hideTryouts = (t.row === 1);
-    tryoutsBtn.style.display = hideTryouts ? 'none' : '';
     // Switching to Southern Jits while sitting on the Tryouts page would
     // strand the user on a page whose tab just disappeared — send them home.
     const onTryouts = document.getElementById('page-tryouts');
     if(hideTryouts && onTryouts && onTryouts.classList.contains('active')){
       showPage('dashboard', document.querySelector('.nav-btn[onclick*="dashboard"]'));
     }
+    const cur = document.querySelector('.page.active')?.id.replace('page-','');
+    if(cur) renderSubnav(cur);
   }
 
   // Accent color reskins buttons/badges/highlights everywhere via the CSS vars
@@ -2784,7 +2827,7 @@ async function loadRiotIdsFromSupabase(){
     if(data && data.riotApiKey){
       try{ localStorage.setItem('sjs_riot_key', data.riotApiKey); }catch(e){}
       const input = document.getElementById('soloq-api-key');
-      if(input) input.value = data.riotApiKey;
+      if(input && !input.value) input.value = data.riotApiKey;
     }
     if(data && data.discordWebhook){
       try{ localStorage.setItem('sjs_discord_webhook', data.discordWebhook); }catch(e){}
@@ -2864,13 +2907,24 @@ function getSoloqPlayers(){
   }).filter(p => p.summoner && p.tag);
 }
 
+function renderManage(){
+  const t = activeTeam();
+  const el = document.getElementById('manage-team-summary');
+  if(el) el.innerHTML = `<strong style="color:var(--text)">${esc(t.name)}</strong> · ${(t.players||[]).length} on the roster · ${PEOPLE.length} people in total`;
+  renderRiotIdSection();
+  const k = document.getElementById('soloq-api-key');
+  if(k && !k.value) k.value = getApiKey();
+}
+
 function renderRiotIdSection(){
   const grid = document.getElementById('riot-id-grid');
   if(!grid) return;
-  grid.innerHTML = soloqPlayerNames().map(name => {
+  const roster = soloqPlayerNames();
+  const names = [...roster, ...PEOPLE.map(p=>p.name).filter(n=>!roster.some(r=>r.toLowerCase()===n.toLowerCase())).sort((a,b)=>a.localeCompare(b))];
+  grid.innerHTML = names.map(name => {
     const accts = personByName(name)?.accounts || [];
     return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px">
-      <div style="font-family:var(--font-d);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${esc(name)}</div>
+      <div style="font-family:var(--font-d);font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${esc(name)}${roster.includes(name)?' <span style="font-size:10px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-left:4px">Roster</span>':''}</div>
       ${accts.length ? accts.map((a,j)=>`<div style="font-size:13px;color:${j?'var(--text3)':'var(--text2)'}">${j?'':'★ '}${esc(riotIdStr(a))}</div>`).join('') : '<div style="font-size:13px;color:var(--text3)">No Riot ID yet</div>'}
     </div>`;
   }).join('') + `<button type="button" class="edit-btn" style="align-self:center;justify-self:start" onclick="openPeopleModal()">👥 Edit People &amp; Riot IDs</button>`;
@@ -2904,8 +2958,8 @@ function saveApiKey(){
   // Persist to Supabase alongside Riot IDs
   const ids = getRiotIds();
   postSave({ riotIds: ids, riotApiKey: key }, '/api/saveConfig').catch(e => saveFailed('API key', e));
-  toast('✓ API key saved!');
-  refreshSoloQ();
+  toast('✓ API key saved — testing it on Solo Queue');
+  showPage('soloq');
 }
 
 function getApiKey(){
@@ -3098,9 +3152,8 @@ async function refreshSoloQ(){
   const grid = document.getElementById('soloq-grid');
 
   if(!key){
-    document.getElementById('soloq-api-key').focus();
     status.style.display='block';
-    status.innerHTML='⚠ Please enter your Riot API key above first.';
+    status.innerHTML='⚠ No Riot API key saved yet — unlock editing (🔒) and add one under ⚙ Manage → Riot API Key.';
     return;
   }
 
@@ -3138,7 +3191,7 @@ async function refreshSoloQ(){
     status.style.display='block';
     status.innerHTML=`<div style="color:var(--loss);background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:8px;padding:16px 20px;text-align:center">
       <div style="font-size:16px;font-weight:700;margin-bottom:6px">⚠ API Key Invalid or Expired</div>
-      <div style="font-size:13px;color:var(--text2)">Riot dev keys expire every 24 hours. Get a new one at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> and paste it above.</div>
+      <div style="font-size:13px;color:var(--text2)">Riot dev keys expire every 24 hours. Get a new one at <a href="https://developer.riotgames.com" target="_blank" style="color:var(--accent)">developer.riotgames.com</a> and paste it under ⚙ Manage → Riot API Key (unlock editing with 🔒 first).</div>
     </div>`;
     return;
   }
@@ -3932,16 +3985,47 @@ function promoteTryout(){
   toast(`✓ ${c.name} added to the roster`);
 }
 
+// Top-level sections; pages in the same group share a sub-tab bar.
+const NAV_GROUPS = {
+  dashboard:{nav:'nav-dashboard'},
+  scrims:{nav:'nav-scrims'},
+  draft:{nav:'nav-draft', tabs:[['analysis','Analysis'],['matchups','Matchups']]},
+  players:{nav:'nav-players', tabs:[['players','Stats'],['soloq','Solo Queue'],['tryouts','Tryouts']]},
+  manage:{nav:'nav-manage'},
+};
+function pageGroup(page){
+  return Object.keys(NAV_GROUPS).find(g=>g===page || (NAV_GROUPS[g].tabs||[]).some(t=>t[0]===page)) || page;
+}
+function renderSubnav(page){
+  const bar = document.getElementById('subnav');
+  if(!bar) return;
+  // Southern Jits has a settled roster, so it has no Tryouts tab
+  const tabs = (NAV_GROUPS[pageGroup(page)]?.tabs||[]).filter(t=>t[0]!=='tryouts' || activeTeam().row!==1);
+  bar.classList.toggle('show', tabs.length>1);
+  bar.innerHTML = tabs.map(([id,label])=>`<button class="subnav-btn${id===page?' active':''}" onclick="showPage('${id}')">${label}</button>`).join('');
+}
+function toggleNavMenu(e){
+  e.stopPropagation();
+  const dd = e.currentTarget.closest('.nav-dd');
+  // Fixed positioning so the tab bar's sideways scrolling doesn't clip the menu
+  const r = e.currentTarget.getBoundingClientRect(), menu = dd.querySelector('.nav-dd-menu');
+  menu.style.top = (r.bottom + 6) + 'px';
+  menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 176)) + 'px';
+  dd.classList.toggle('open');
+}
+document.addEventListener('click', ()=>document.querySelectorAll('.nav-dd.open').forEach(d=>d.classList.remove('open')));
+
 function showPage(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  btn.classList.add('active');
+  document.getElementById(NAV_GROUPS[pageGroup(page)]?.nav)?.classList.add('active');
+  renderSubnav(page);
+  // The date-range toggle doesn't apply to settings
+  document.body.classList.toggle('on-manage', page==='manage');
+  if(page==='manage') renderManage();
   if(page==='analysis')renderAnalysis();
-  if(page==='soloq'){
-    const k=getApiKey();
-    if(k){document.getElementById('soloq-api-key').value=k;refreshSoloQ();}
-  }
+  if(page==='soloq') refreshSoloQ();
 
   if(page==='scrims')renderScrims();
   if(page==='players')renderPlayers();
@@ -4108,9 +4192,11 @@ document.addEventListener('click', function(e){
       unlocked = true;
       window._sjsUnlocked = true;
       document.getElementById('vm-style').textContent = '';
-      ['log-btn-el','import-btn-el','export-btn-el','notif-btn'].forEach(function(id){
+      ['log-btn-el','notif-btn'].forEach(function(id){
         const el = document.getElementById(id); if(el) el.style.display = '';
       });
+      const manageBtn = document.getElementById('nav-manage');
+      if(manageBtn) manageBtn.style.display = '';
       const riotSection = document.getElementById('riot-id-section');
       if(riotSection){ riotSection.style.display = 'block'; renderRiotIdSection(); }
       const lb = document.getElementById('lock-btn');
