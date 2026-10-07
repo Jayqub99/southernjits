@@ -285,8 +285,8 @@ tbody td{padding:12px 14px;color:var(--text)}
 /* TOAST */
 .notif-btn{position:relative;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;transition:all .2s;flex-shrink:0}
 .notif-btn:hover{border-color:rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.08)}
-.lock-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;flex-shrink:0}
-.lock-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text);background:rgba(255,255,255,.08)}
+#lock-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text2);font-size:15px;transition:all .2s;flex-shrink:0}
+#lock-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text);background:rgba(255,255,255,.08)}
 #lock-btn{width:auto;max-width:none}
 .notif-icon{font-size:18px;line-height:1;display:block}
 .notif-count{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:var(--font-u)}
@@ -2189,7 +2189,14 @@ function renderPlayers(){
     return;
   }
 
-  document.getElementById('player-grid').innerHTML = filteredPlayers.map(p=>{
+  // Roster players with no games in this range get one line, not an empty card
+  const playedInRange = p => scrims.some(s=>s.players&&ROLES.some(r=>s.players[r]===p.name));
+  const idle = activePlayerSelect === 'all' ? filteredPlayers.filter(p=>!playedInRange(p)) : [];
+  const cardPlayers = filteredPlayers.filter(p=>!idle.includes(p));
+  const idleNote = idle.length
+    ? `<div style="font-size:13px;color:var(--text3);padding:12px 4px">No games in this range: ${idle.map(p=>esc(p.name)).join(', ')}</div>`
+    : '';
+  document.getElementById('player-grid').innerHTML = cardPlayers.map(p=>{
     // Filter scrims to only the selected role (or all roles)
     let pg;
     if (activeRoleFilter === 'all') {
@@ -2319,7 +2326,7 @@ function renderPlayers(){
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + idleNote;
 }
 
 function toggleHistory(id){
