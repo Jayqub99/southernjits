@@ -445,10 +445,7 @@ tbody td{padding:12px 14px;color:var(--text)}
       <div class="section-line"></div>
       <span class="filter-badge" id="clear-filter" style="display:none" onclick="clearFilter()">✕ Clear Filter</span>
     </div>
-    <div class="card"><div class="table-wrap"><table id="dashboard-table">
-      <thead><tr><th>Date</th><th>Opponent</th><th>Game</th><th>Result</th><th>Top</th><th>Jng</th><th>Mid</th><th>ADC</th><th>Sup</th></tr></thead>
-      <tbody></tbody>
-    </table></div></div>
+    <div id="dashboard-series" class="series-list"></div>
   </div>
 
   <!-- SCRIMS -->
@@ -1876,17 +1873,15 @@ function renderDashboard(){
       <div class="stat-label">Win Rate</div><div class="stat-value gold">${wr}%</div>
     </div>
   `;
-  const filtered = activeFilter ? scrims.filter(s=>s.result===activeFilter) : [...scrims];
+  // Recent series as cards; the Wins/Losses cards narrow it to series containing one
+  const filtered = activeFilter ? scrims.filter(s=>s.result===activeFilter) : scrims;
   const title = activeFilter ? `${activeFilter}s (${filtered.length})` : 'Recent Scrims';
   document.getElementById('recent-title').textContent = title;
   document.getElementById('clear-filter').style.display = activeFilter ? 'inline-block' : 'none';
-  const display = activeFilter ? filtered : [...scrims].reverse().slice(0,10);
-  document.querySelector('#dashboard-table tbody').innerHTML = display.map((s,i)=>`
-    <tr onclick="openDetail(${realIdx(s)})" style="cursor:pointer">
-      <td>${fmtDate(s.date)}</td><td>${esc(s.opponent)}</td><td>${esc(s.game)}</td>
-      <td><span class="${s.result==='Win'?'badge-win':'badge-loss'}">${s.result}</span></td>
-      ${ROLES.map(r=>`<td>${champCell(s[r])}</td>`).join('')}
-    </tr>`).join('');
+  let groups = seriesGroups(scrims).filter(g=>!activeFilter || g.some(x=>x.result===activeFilter)).reverse();
+  if(!activeFilter) groups = groups.slice(0,4);
+  document.getElementById('dashboard-series').innerHTML = groups.length ? seriesCardsHtml(groups)
+    : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`;
 }
 
 // ── SCRIMS ─
