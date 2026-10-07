@@ -852,7 +852,10 @@ let PLAYER_NAMES = PLAYERS.map(p=>p.name);
 let TEAMS = [
   {row:1, name:'Southern Jits', dataFrom:'2026-05-04', players:PLAYERS, accent:'#e94560', password:'southerngooners'},
 ];
-try{ const _t=JSON.parse(localStorage.getItem('sjs_teams')||'null'); if(Array.isArray(_t)&&_t.length) TEAMS=_t; }catch(e){}
+// True once TEAMS holds something real (this browser's cache or the server),
+// not just the defaults above — only then may it be pushed to an empty server.
+let _teamsFromCache = false;
+try{ const _t=JSON.parse(localStorage.getItem('sjs_teams')||'null'); if(Array.isArray(_t)&&_t.length){ TEAMS=_t; _teamsFromCache=true; } }catch(e){}
 let activeTeamRow = parseInt(localStorage.getItem('sjs_active_team')||'1');
 if(!TEAMS.find(t=>t.row===activeTeamRow)) activeTeamRow = TEAMS[0].row;
 
@@ -1021,31 +1024,51 @@ async function loadFromSupabase(){
   const row = activeTeamRow; // snapshot — user may switch teams mid-fetch
   try {
     const res = await fetch(`/api/getData?row=${row}`);
-    if(!res.ok) throw new Error('getData failed');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if(row !== activeTeamRow) return; // stale response for a different team
     if(Array.isArray(data) && data.length > 0){
       scrims = data;
       try{localStorage.setItem(scrimCacheKey(row), JSON.stringify(scrims));}catch(e){}
       renderAll();
-    } else if(row === 1 && scrims.length > 0) {
-      // Seed Supabase with existing local data on first load (legacy row only)
+    } else if(row === 1 && scrims.length > 0 && scrims !== SJ_SEED) {
+      // Seed Supabase with this browser's cached data on first load (legacy
+      // row only). Never push the hardcoded SJ_SEED: a fresh/private browser
+      // would otherwise write it to the server, and every other browser would
+      // then load it over its own data.
       await saveToSupabase();
     }
   } catch(err) {
     console.warn('Supabase load failed, using local data:', err);
+    toast(`⚠ Couldn't load scrims from server (${err.message}) — showing this browser's copy`, 'var(--loss)');
   }
+}
+
+// fetch() only rejects on network errors, so check the status too — a 4xx/5xx
+// from /api/saveData used to be swallowed, leaving changes only in this
+// browser's localStorage with no sign anything was wrong.
+async function postSave(body, url='/api/saveData'){
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    let detail = '';
+    try{ detail = (await res.json()).error || ''; }catch(e){}
+    throw new Error(`HTTP ${res.status}${detail ? ' — '+detail : ''}`);
+  }
+}
+function saveFailed(what, err){
+  console.warn(what+' save failed:', err);
+  toast(`⚠ ${what} not saved to server (${err.message}) — only on this browser`, 'var(--loss)');
 }
 
 async function saveToSupabase(){
   try {
-    await fetch('/api/saveData', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({row: activeTeamRow, data: scrims})
-    });
+    await postSave({row: activeTeamRow, data: scrims});
   } catch(err) {
-    console.warn('Supabase save failed:', err);
+    saveFailed('Scrims', err);
   }
 }
 
@@ -1357,25 +1380,24 @@ function createTeam(){
 
 function saveTeams(){
   try{ localStorage.setItem('sjs_teams', JSON.stringify(TEAMS)); }catch(e){}
-  fetch('/api/saveData', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({row:9, data:{teams:TEAMS}})
-  }).catch(e=>console.warn('saveTeams failed:', e));
+  _teamsFromCache = true;
+  postSave({row:9, data:{teams:TEAMS}}).catch(e=>saveFailed('Teams/rosters', e));
 }
 
 async function loadTeams(){
   try{
     const res = await fetch('/api/getData?row=9');
-    if(!res.ok) return;
+    if(!res.ok){ toast(`⚠ Couldn't load teams/rosters from server (HTTP ${res.status})`, 'var(--loss)'); return; }
     const data = await res.json();
     if(data && Array.isArray(data.teams) && data.teams.length){
       TEAMS = data.teams;
+      _teamsFromCache = true;
       try{ localStorage.setItem('sjs_teams', JSON.stringify(TEAMS)); }catch(e){}
       if(!TEAMS.find(t=>t.row===activeTeamRow)) activeTeamRow = TEAMS[0].row;
       applyTeam();
-    } else {
-      // First run — seed the registry with the current defaults
+    } else if(_teamsFromCache) {
+      // Server registry is empty — seed it from this browser's saved teams.
+      // Not from the hardcoded defaults, which would clobber other browsers.
       saveTeams();
     }
   }catch(e){ console.warn('loadTeams failed:', e); }
@@ -2556,14 +2578,10 @@ function saveDiscordWebhook(){
   _webhookSaveTimer = setTimeout(()=>{
     const ids = getRiotIds();
     const key = getApiKey();
-    fetch('/api/saveConfig', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ riotIds: ids, riotApiKey: key, discordWebhook: url })
-    }).then(()=>{
+    postSave({ riotIds: ids, riotApiKey: key, discordWebhook: url }, '/api/saveConfig').then(()=>{
       const st = document.getElementById('discord-webhook-status');
       if(st){ st.style.display='inline'; setTimeout(()=>st.style.display='none', 2000); }
-    }).catch(e=>console.warn('saveConfig failed:', e));
+    }).catch(e=>saveFailed('Discord webhook', e));
   }, 800);
 }
 
@@ -2610,11 +2628,7 @@ function saveRiotId(name, summoner, tag){
   _riotIds = ids;
   try{ localStorage.setItem('sjs_riot_ids', JSON.stringify(ids)); }catch(e){}
   // Persist to Supabase
-  fetch('/api/saveConfig', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ riotIds: ids })
-  }).catch(e => console.warn('saveConfig failed:', e));
+  postSave({ riotIds: ids }, '/api/saveConfig').catch(e => saveFailed('Riot ID', e));
 }
 function getSoloqPlayers(){
   const ids = getRiotIds();
@@ -2676,11 +2690,7 @@ function saveApiKey(){
   document.getElementById('soloq-api-key').value = key;
   // Persist to Supabase alongside Riot IDs
   const ids = getRiotIds();
-  fetch('/api/saveConfig', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ riotIds: ids, riotApiKey: key })
-  }).catch(e => console.warn('saveConfig failed:', e));
+  postSave({ riotIds: ids, riotApiKey: key }, '/api/saveConfig').catch(e => saveFailed('API key', e));
   toast('✓ API key saved!');
   refreshSoloQ();
 }
