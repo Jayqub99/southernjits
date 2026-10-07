@@ -152,12 +152,29 @@ tbody td{padding:12px 14px;color:var(--text)}
 .series-game:last-child{border-bottom:none}
 .series-game:hover{background:rgba(255,255,255,.02)}
 .series-game-label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)}
-.series-picks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.series-slot{display:flex;flex-direction:column;gap:2px;min-width:0}
-.series-slot .champ-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.series-enemy{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.06)}
-.series-enemy .champ-icon{width:22px;height:22px;opacity:.85}
-.series-enemy .champ-name{font-size:12px;color:var(--text3)}
+.lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lanes-head{cursor:default;padding-top:8px;padding-bottom:0;border-bottom:none}
+.lanes-head:hover{background:none}
+.lanes-head .lanes > div{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding-left:10px}
+.lane{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pick{border-radius:6px;padding:7px 9px;border-left:3px solid;min-width:0}
+.pick.us{background:rgba(74,144,217,.08);border-left-color:rgba(74,144,217,.7)}
+.pick.them{background:rgba(231,76,60,.06);border-left-color:rgba(231,76,60,.5)}
+.pick-champ{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text);min-width:0}
+.pick-champ span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-champ .champ-icon{width:24px;height:24px;border-radius:5px}
+.pick.them .pick-champ{color:var(--text2)}
+.pick-none{color:var(--text3)}
+.pick-who{font-size:12px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick.us .pick-who{color:var(--blue)}
+.pick.them .pick-who{color:var(--text2);font-weight:600}
+.pick-stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:3px;font-size:12px;color:var(--text2)}
+.pick-stats b{font-weight:700}
+.pick-diff{font-size:11px;font-weight:700;padding:0 5px;border-radius:4px}
+.pick-diff.up{color:var(--win);background:rgba(39,174,96,.12)}
+.pick-diff.down{color:var(--loss);background:rgba(231,76,60,.12)}
+.series-game-no{font-weight:600;color:var(--text)}
+.series-game-len{font-size:12px;color:var(--text3)}
 .series-notes{grid-column:2 / -1;font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .series-notes.open{white-space:normal}
 @media(max-width:640px){
@@ -165,8 +182,13 @@ tbody td{padding:12px 14px;color:var(--text)}
   .series-game-label{flex-direction:row;align-items:center;grid-column:1}
   .series-picks-wrap{grid-column:1 / -1;grid-row:2}
   .series-notes{grid-column:1 / -1}
-  .series-slot .champ-cell{flex-direction:column;align-items:flex-start;gap:2px}
-  .series-slot .champ-name,.series-enemy .champ-name{font-size:11px;max-width:100%}
+  .lanes{gap:4px}
+  .lanes-head{display:none}
+  .pick{padding:5px 5px;border-left-width:2px}
+  .pick-champ{flex-direction:column;align-items:flex-start;gap:2px;font-size:11px}
+  .pick-champ span{max-width:100%}
+  .pick-who,.pick-stats{font-size:10px}
+  .pick-stats{gap:2px 4px}
   .series-head{padding:12px}
 }
 .champ-icon{width:32px;height:32px;border-radius:6px;object-fit:cover;border:1px solid var(--border);background:var(--bg3);flex-shrink:0}
@@ -2073,27 +2095,49 @@ function renderScrims(){
     : `<div class="card" style="text-align:center;color:var(--text3);padding:40px">${emptyGamesMsg()}</div>`;
 }
 
+// Notes the capture script writes ("Auto-captured | Duration: …") repeat what
+// the card already shows; keep only what someone actually typed or flagged.
+function displayNotes(n){
+  return String(n||'').split('|').map(x=>x.trim())
+    .filter(x=>x && !/^Auto-captured\b/i.test(x) && !/^Duration:/i.test(x)).join(' · ');
+}
+const shortRiotName = id => String(id||'').split('#')[0].trim();
+
 function seriesCardsHtml(grouped){
-  const slot = (champ, player, kda, cs) => `<div class="series-slot" title="${esc(champ||'')}${player?' — '+esc(player):''}">
-      ${champ ? champCell(champ) : '<span style="color:var(--text3);font-size:12px">—</span>'}
-      ${player ? `<span class="player-tag">${esc(player)}</span>` : ''}
-      ${kda ? `<span style="font-size:11px;color:${kdaColor(kdaRatio(kda))};font-weight:700">${esc(kda)}${cs!==null&&cs!==undefined?` <span style="color:var(--text3);font-weight:400">· ${cs}cs</span>`:''}</span>` : ''}
+  const roleNames = {top:'Top',jng:'Jungle',mid:'Mid',adc:'ADC',sup:'Support'};
+  // One block per side of a lane: champion, who played it, KDA and CS
+  const pick = (side, champ, who, whoTitle, kda, cs, diff) => `<div class="pick ${side}" title="${esc(champ||'')}${whoTitle?' — '+esc(whoTitle):''}">
+      <div class="pick-champ">${champ ? `<img class="champ-icon" src="${iconUrl(champ)}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(champ)}</span>` : '<span class="pick-none">—</span>'}</div>
+      ${who ? `<div class="pick-who">${esc(who)}</div>` : ''}
+      ${(kda || cs!==null) ? `<div class="pick-stats">
+        ${kda ? `<b style="color:${side==='us'?kdaColor(kdaRatio(kda)):'var(--text)'}">${esc(kda)}</b>` : ''}
+        ${cs!==null ? `<span>${cs} cs</span>` : ''}
+        ${diff!==null ? `<span class="pick-diff ${diff>=0?'up':'down'}" title="CS vs their laner">${signed(diff)}</span>` : ''}
+      </div>` : ''}
     </div>`;
   const gameRow = s => {
     const idx = scrims.indexOf(s);
+    const notes = displayNotes(s.notes);
+    const lanes = ROLES.map(r=>{
+      const cs = statNum(s.cs,r), ecs = statNum(s.ecs,r);
+      const er = s.eplayers?.[r];
+      return `<div class="lane">
+        ${pick('us', s[r], s.players?.[r], s.players?.[r], s.kda?.[r], cs, cs!==null&&ecs!==null ? cs-ecs : null)}
+        ${pick('them', s['e'+r], shortRiotName(er), er, s.ekda?.[r], ecs, null)}
+      </div>`;
+    }).join('');
     return `<div class="series-game" onclick="openDetail(${idx})">
       <div class="series-game-label">
-        <span>${esc(s.game)}${gameMins(s)?` <span style="color:var(--text3);font-size:12px">· ${Math.round(gameMins(s))}m</span>`:''}</span>
+        <span class="series-game-no">${esc(s.game)}</span>
         <span class="${s.result==='Win'?'badge-win':'badge-loss'}" style="align-self:flex-start">${s.result}</span>
+        ${gameMins(s)?`<span class="series-game-len">${Math.round(gameMins(s))} min</span>`:''}
       </div>
-      <div class="series-picks-wrap">
-        <div class="series-picks">${ROLES.map(r=>slot(s[r], s.players?.[r], s.kda?.[r], statNum(s.cs,r))).join('')}</div>
-        <div class="series-enemy">${['etop','ejng','emid','eadc','esup'].map((r,i)=>`<div class="series-slot">${s[r]?champCell(s[r]):'<span style="color:var(--text3);font-size:12px">—</span>'}${s.eplayers?.[ROLES[i]]?`<span class="player-tag" style="opacity:.7">${esc(s.eplayers[ROLES[i]])}</span>`:''}${s.ekda?.[ROLES[i]]?`<span style="font-size:11px;color:var(--text3)">${esc(s.ekda[ROLES[i]])}${statNum(s.ecs,ROLES[i])!==null?` · ${statNum(s.ecs,ROLES[i])}cs`:''}</span>`:''}</div>`).join('')}</div>
-      </div>
+      <div class="series-picks-wrap"><div class="lanes">${lanes}</div></div>
       <div onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></div>
-      ${s.notes ? `<div class="series-notes" title="${esc(s.notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(s.notes)}</div>` : ''}
+      ${notes ? `<div class="series-notes" title="${esc(notes)}" onclick="event.stopPropagation();this.classList.toggle('open')">📝 ${esc(notes)}</div>` : ''}
     </div>`;
   };
+  const roleHead = `<div class="series-game lanes-head"><div></div><div class="lanes">${ROLES.map(r=>`<div>${roleNames[r]}</div>`).join('')}</div><div></div></div>`;
   return grouped.map(group => {
     const w = group.filter(g=>g.result==='Win').length, l = group.length - w;
     const cls = w>l ? 's-win' : l>w ? 's-loss' : 's-even';
@@ -2104,6 +2148,7 @@ function seriesCardsHtml(grouped){
         <span class="series-date">${fmtDate(group[0].date)}</span>
         <span class="series-score">${verdict} ${w}–${l}</span>
       </div>
+      ${roleHead}
       ${group.map(gameRow).join('')}
     </div>`;
   }).join('');
