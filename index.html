@@ -2962,9 +2962,33 @@ function showImportFeedback(type, msg){
   fb.innerHTML = msg;
 }
 
+// The capture script records every ally's Riot ID (osummoners); fill any
+// blank player names from the People list's accounts, mains and alts alike.
+// Returns how many names were filled.
+function fillPlayersFromAccounts(games){
+  const byId = {}, byName = {};
+  PEOPLE.forEach(p=>(p.accounts||[]).forEach(a=>{
+    byId[riotIdStr(a).toLowerCase()] = p.name;
+    const n = a.name.toLowerCase();
+    byName[n] = byName[n] === undefined ? p.name : (byName[n] === p.name ? p.name : null); // null = ambiguous
+  }));
+  let filled = 0;
+  games.forEach(g=>{
+    const ids = g.osummoners || {};
+    ROLES.forEach(r=>{
+      const raw = String(ids[r]||'').trim().toLowerCase();
+      if(!raw || (g.players && g.players[r])) return;
+      const who = raw.includes('#') ? (byId[raw.replace(/\s*#\s*/,'#')] || byName[raw.split('#')[0].trim()]) : byName[raw];
+      if(who){ (g.players = g.players || {})[r] = who; filled++; }
+    });
+  });
+  return filled;
+}
+
 function confirmImport(){
   if(!_importParsed){ toast('No validated data to import.', 'var(--loss)'); return; }
   const mode = document.querySelector('input[name="import-mode"]:checked').value;
+  const named = fillPlayersFromAccounts(_importParsed);
 
   if(mode === 'replace'){
     scrims = _importParsed;
@@ -2978,15 +3002,8 @@ function confirmImport(){
 
   save();
   closeImportModal();
-  renderDashboard();
-  renderScrimsTable();
-  renderAnalysis();
-  renderPlayers();
-  const count = mode === 'replace' ? _importParsed.length : _importParsed.filter(g => {
-    const existing = new Set(scrims.map(s => s.date+'|'+s.opponent+'|'+s.game));
-    return existing.has(g.date+'|'+g.opponent+'|'+g.game);
-  }).length;
-  toast(`✓ Import complete — ${scrims.length} total records loaded.`);
+  renderAll();
+  toast(`✓ Import complete — ${scrims.length} total records loaded${named?` · ${named} player name${named>1?'s':''} filled from People`:''}.`);
   _importParsed = null;
 }
 
