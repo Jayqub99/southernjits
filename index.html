@@ -157,8 +157,9 @@ tbody td{padding:12px 14px;color:var(--text)}
 .lanes-head .lanes > div{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding-left:10px}
 .lane{display:flex;flex-direction:column;gap:4px;min-width:0}
 .pick{border-radius:6px;padding:7px 9px;border-left:3px solid;min-width:0}
-.pick.us{background:rgba(74,144,217,.08);border-left-color:rgba(74,144,217,.7)}
-.pick.them{background:rgba(231,76,60,.06);border-left-color:rgba(231,76,60,.5)}
+/* Colour follows the game's result: blue = side that won, red = side that lost */
+.pick.won{background:rgba(74,144,217,.08);border-left-color:rgba(74,144,217,.7)}
+.pick.lost{background:rgba(231,76,60,.06);border-left-color:rgba(231,76,60,.5)}
 .pick-champ{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text);min-width:0}
 .pick-champ span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pick-champ .champ-icon{width:24px;height:24px;border-radius:5px}
@@ -2104,8 +2105,9 @@ const shortRiotName = id => String(id||'').split('#')[0].trim();
 
 function seriesCardsHtml(grouped){
   const roleNames = {top:'Top',jng:'Jungle',mid:'Mid',adc:'ADC',sup:'Support'};
-  // One block per side of a lane: champion, who played it, KDA and CS
-  const pick = (side, champ, who, whoTitle, kda, cs, diff) => `<div class="pick ${side}" title="${esc(champ||'')}${whoTitle?' — '+esc(whoTitle):''}">
+  // One block per side of a lane: champion, who played it, KDA and CS.
+  // Ours is always on top; the block colour shows which side won the game.
+  const pick = (side, won, champ, who, whoTitle, kda, cs, diff) => `<div class="pick ${side} ${won?'won':'lost'}" title="${esc(champ||'')}${whoTitle?' — '+esc(whoTitle):''}">
       <div class="pick-champ">${champ ? `<img class="champ-icon" src="${iconUrl(champ)}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(champ)}</span>` : '<span class="pick-none">—</span>'}</div>
       ${who ? `<div class="pick-who">${esc(who)}</div>` : ''}
       ${(kda || cs!==null) ? `<div class="pick-stats">
@@ -2117,12 +2119,13 @@ function seriesCardsHtml(grouped){
   const gameRow = s => {
     const idx = scrims.indexOf(s);
     const notes = displayNotes(s.notes);
+    const weWon = s.result === 'Win';
     const lanes = ROLES.map(r=>{
       const cs = statNum(s.cs,r), ecs = statNum(s.ecs,r);
       const er = s.eplayers?.[r];
       return `<div class="lane">
-        ${pick('us', s[r], s.players?.[r], s.players?.[r], s.kda?.[r], cs, cs!==null&&ecs!==null ? cs-ecs : null)}
-        ${pick('them', s['e'+r], shortRiotName(er), er, s.ekda?.[r], ecs, null)}
+        ${pick('us', weWon, s[r], s.players?.[r], s.players?.[r], s.kda?.[r], cs, cs!==null&&ecs!==null ? cs-ecs : null)}
+        ${pick('them', !weWon, s['e'+r], shortRiotName(er), er, s.ekda?.[r], ecs, null)}
       </div>`;
     }).join('');
     return `<div class="series-game" onclick="openDetail(${idx})">
