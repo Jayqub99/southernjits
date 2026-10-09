@@ -258,12 +258,43 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 .picks-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
 .picks-col{flex:1;min-width:200px}
 .picks-col-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+/* Our Matches: one column per lane, our pick over theirs; blue = side that won the game */
+.lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.lanes-head > div{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7d8aa3;padding:0 0 4px 10px}
+.lane{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pick{border-radius:6px;padding:7px 9px;border-left:3px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);min-width:0}
+.pick.won{background:rgba(74,144,217,.09);border-left-color:rgba(74,144,217,.75)}
+.pick.lost{background:rgba(231,76,60,.07);border-left-color:rgba(231,76,60,.55)}
+.pick-champ{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--text);min-width:0}
+.pick-champ span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-champ .champ-icon{width:24px;height:24px;border-radius:5px}
+.pick.them .pick-champ{color:#b4bfd3}
+.pick-who{font-size:12px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick.us .pick-who{color:#6fa3e0}
+.pick.them .pick-who{color:#9aa8c0;font-weight:600}
+.pick-stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:3px;font-size:12px;color:#9aa8c0}
+.pick-stats b{font-weight:700;color:var(--text)}
+.pick-diff{font-size:11px;font-weight:700;padding:0 5px;border-radius:4px}
+.pick-diff.up{color:var(--win);background:rgba(46,204,113,.12)}
+.pick-diff.down{color:var(--loss);background:rgba(231,76,60,.12)}
+.game-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.game-meta .game-no{font-family:var(--font-d);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#b4bfd3}
+.game-meta .game-len{font-size:12px;color:#7d8aa3}
+@media(max-width:700px){
+  .lanes{gap:4px}
+  .lanes-head{display:none}
+  .pick{padding:5px;border-left-width:2px}
+  .pick-champ{flex-direction:column;align-items:flex-start;gap:2px;font-size:11px}
+  .pick-champ span{max-width:100%}
+  .pick-who,.pick-stats{font-size:10px}
+  .pick-stats{gap:2px 4px}
+}
 .picks-list{display:flex;flex-direction:column;gap:6px}
 
 /* ─── RESPONSIVE ─── */
 @media(max-width:1100px){.grid-4,.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.grid-2,.grid-3,.grid-4,.dash-grid{grid-template-columns:1fr}.match-inner{grid-template-columns:1fr;text-align:center}.match-team-a{text-align:center}.side-blue,.side-red{text-align:center}main{padding:16px}}
-@media(max-width:600px){.header-top{padding:0 16px}.nav-btn{padding:12px 12px;font-size:11px}.teams-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.header-top{padding:10px 16px;height:auto;min-height:66px}.logo-text{font-size:17px}.nav-btn{padding:12px 12px;font-size:11px}.teams-grid{grid-template-columns:1fr 1fr}}
 
 /* ─── TOAST ─── */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--win);border-radius:8px;padding:12px 20px;color:var(--win);font-weight:700;font-size:14px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
