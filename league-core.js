@@ -587,21 +587,55 @@ function noteGames(note) {
   return [];
 }
 
+// Capture-script notes ("Auto-captured | Duration: …") repeat what the card shows
+function displayNotes(n){
+  return String(n||'').split('|').map(x=>x.trim())
+    .filter(x=>x && !/^Auto-captured\b/i.test(x) && !/^Duration:/i.test(x)).join(' · ');
+}
+function kdaColor(kda){
+  const p = String(kda||'').split('/').map(Number);
+  if(p.length!==3 || p.some(isNaN)) return 'var(--text)';
+  const r = p[1]===0 ? p[0]+p[2] : (p[0]+p[2])/p[1];
+  return r>=4 ? '#f5a623' : r>=2.5 ? 'var(--win)' : r>=1.5 ? 'var(--text)' : 'var(--loss)';
+}
+const signed = v => (v>0?'+':'') + Math.round(v);
+const LANE_LABELS = { Top:'Top', Jungle:'Jungle', Middle:'Mid', Bottom:'ADC', Support:'Support' };
+
+// Same layout as the Scrims page: one column per lane, our pick over theirs,
+// blue for the side that won the game and red for the side that lost.
 function renderGameBlock(game, oppName, idx, total) {
+  const res = game.result === 'Win' ? true : game.result === 'Loss' ? false : null;
+  const cls = won => won===null ? '' : (won ? 'won' : 'lost');
+  const pick = (side, won, champ, who, whoTitle, kda, cs, diff) => `<div class="pick ${side} ${cls(won)}" title="${esc(champ||'')}${whoTitle?' — '+esc(whoTitle):''}">
+      <div class="pick-champ">${champ ? `<img class="champ-icon" src="${champIconUrl(champ)}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(champ)}</span>` : '<span style="color:#7d8aa3">—</span>'}</div>
+      ${who ? `<div class="pick-who">${esc(who)}</div>` : ''}
+      ${(kda || cs!==null) ? `<div class="pick-stats">
+        ${kda ? `<b style="color:${side==='us'?kdaColor(kda):'var(--text)'}">${esc(kda)}</b>` : ''}
+        ${cs!==null ? `<span>${cs} cs</span>` : ''}
+        ${diff!==null ? `<span class="pick-diff ${diff>=0?'up':'down'}" title="CS vs their laner">${signed(diff)}</span>` : ''}
+      </div>` : ''}
+    </div>`;
+  const val = (m, role) => (m && m[role] !== undefined && m[role] !== null && m[role] !== '') ? Number(m[role]) : null;
+  const lanes = MN_ROLES.map(role => {
+    const cs = val(game.sjsCs, role), ecs = val(game.oppCs, role);
+    const opp = game.oppPlayers?.[role] || '';
+    return `<div class="lane">
+      ${pick('us', res, game.sjsPicks?.[role], game.sjsPlayers?.[role], game.sjsIds?.[role] || game.sjsPlayers?.[role], game.sjsKda?.[role], cs, cs!==null && ecs!==null ? cs-ecs : null)}
+      ${pick('them', res===null ? null : !res, game.oppPicks?.[role], opp.split('#')[0].trim(), opp, game.oppKda?.[role], ecs, null)}
+    </div>`;
+  }).join('');
   const resultTag = game.result ? `<span class="result-tag" style="background:${game.result==='Win'?'rgba(46,204,113,.12)':'rgba(231,76,60,.12)'};color:${game.result==='Win'?'var(--win)':'var(--loss)'};border:1px solid ${game.result==='Win'?'rgba(46,204,113,.3)':'rgba(231,76,60,.3)'}">${esc(game.result.toUpperCase())}</span>` : '';
+  const mins = Number(game.durationMin) || 0;
+  const notes = displayNotes(game.notes);
   return `<div style="${idx>0?'border-top:1px solid var(--border);padding-top:14px;margin-top:14px':''}">
-    ${total>1?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-family:var(--font-d);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)">Game ${idx+1}</span>${resultTag}</div>`:''}
-    <div class="picks-row">
-      <div class="picks-col">
-        <div class="picks-col-label" style="color:var(--accent)">Southern Jits</div>
-        <div class="picks-list">${MN_ROLES.map(role=>pickCell(game.sjsPicks?.[role], game.sjsPlayers?.[role], game.sjsKda?.[role])).join('')}</div>
-      </div>
-      <div class="picks-col">
-        <div class="picks-col-label">${esc(oppName)}</div>
-        <div class="picks-list">${MN_ROLES.map(role=>pickCell(game.oppPicks?.[role], game.oppPlayers?.[role], game.oppKda?.[role])).join('')}</div>
-      </div>
+    <div class="game-meta">
+      <span class="game-no">${total>1 ? `Game ${idx+1}` : 'Game'}</span>${resultTag}
+      ${mins ? `<span class="game-len">${Math.round(mins)} min</span>` : ''}
+      <span style="margin-left:auto;font-size:11px;color:#7d8aa3">Southern Jits on top · ${esc(oppName)} below</span>
     </div>
-    ${game.notes?`<div style="font-size:12px;color:var(--text3);margin-top:6px">${esc(game.notes)}</div>`:''}
+    <div class="lanes lanes-head">${MN_ROLES.map(r=>`<div>${LANE_LABELS[r]||r}</div>`).join('')}</div>
+    <div class="lanes">${lanes}</div>
+    ${notes?`<div style="font-size:12px;color:#9aa8c0;margin-top:8px">📝 ${esc(notes)}</div>`:''}
   </div>`;
 }
 
@@ -789,6 +823,9 @@ async function confirmMnImport() {
 
   const games = rawGames.map(g => {
     const sjsPicks={}, oppPicks={}, sjsPlayers={}, oppPlayers={}, sjsKda={}, oppKda={};
+    // Extra stats the capture script records; kept so this page shows the same as the Scrims page
+    const sjsCs={}, oppCs={}, sjsVision={}, oppVision={}, sjsLevel={}, sjsIds={};
+    const num = (m, k) => (m && m[k] !== undefined && m[k] !== null && m[k] !== '') ? Number(m[k]) : null;
     Object.entries(MN_ROLE_KEY).forEach(([key, role]) => {
       sjsPicks[role]   = g[key] || '';
       oppPicks[role]   = g['e'+key] || '';
@@ -796,8 +833,17 @@ async function confirmMnImport() {
       oppPlayers[role] = g.eplayers?.[key] || '';
       sjsKda[role]     = g.kda?.[key] || '';
       oppKda[role]     = g.ekda?.[key] || '';
+      sjsCs[role]      = num(g.cs, key);
+      oppCs[role]      = num(g.ecs, key);
+      sjsVision[role]  = num(g.vision, key);
+      oppVision[role]  = num(g.evision, key);
+      sjsLevel[role]   = num(g.level, key);
+      sjsIds[role]     = g.osummoners?.[key] || '';
     });
-    return { sjsPicks, oppPicks, sjsPlayers, oppPlayers, sjsKda, oppKda, result: g.result || '', notes: g.notes || '' };
+    return { sjsPicks, oppPicks, sjsPlayers, oppPlayers, sjsKda, oppKda,
+             sjsCs, oppCs, sjsVision, oppVision, sjsLevel, sjsIds,
+             durationMin: Number(g.durationMin) || null,
+             result: g.result || '', notes: g.notes || '' };
   });
 
   const existing = matchNotes[mnImportMatchId] || {};
